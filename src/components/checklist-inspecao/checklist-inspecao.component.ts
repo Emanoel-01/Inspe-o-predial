@@ -9,6 +9,31 @@ import { CameraService } from '../../services/camera.service';
 import { Type } from '@google/genai';
 import { OrcamentoService, Composicao } from '../../services/orcamento.service';
 
+export interface FichaDano {
+  id: string;
+  numeroFicha: number;                    // sequencial GLOBAL na Vistoria
+  pavimento?: string;
+  ambiente?: string;
+  id_evidencias?: string[];               // chaves das fotos no store 'evidencias'
+  diagnostico_ia?: string;
+  quantitativo?: string;
+  memorialDescritivo?: string;
+  correlacaoFotoPatologia?: 'CONFIRMADA' | 'DIVERGENTE' | 'INCONCLUSIVA';
+  observacaoDivergencia?: string;
+  composicoesAplicadas?: string[];
+  severity?: 'Mínimo' | 'Regular' | 'Crítico';
+  notes: string;
+  classificacao?: { tipo: 'ANOMALIA' | 'FALHA' | 'INDETERMINADO'; subtipo?: string };
+  manifestacao?: string;
+  causaProvavel?: string;
+  recomendacaoTecnica?: string;
+  normasAplicaveis?: NormaRef[];
+  criticidade?: 'P1' | 'P2' | 'P3';
+  gut?: { g: number; u: number; t: number };
+  dateCreated: string;
+  dateUpdated: string;
+}
+
 export interface ChecklistItem {
   id: string;
   systemTitle: string;
@@ -16,15 +41,7 @@ export interface ChecklistItem {
   title: string;
   description: string;
   status: 'PENDENTE' | 'PASS' | 'FAIL' | 'NA' | 'CONFORME' | 'NAO_CONFORME' | 'NAO_APLICAVEL';
-  severity?: 'Mínimo' | 'Regular' | 'Crítico';
-  notes: string;
-  id_evidencias?: string[];   // chaves das fotos no store 'evidencias'
-  diagnostico_ia?: string;    // texto do diagnóstico gerado pela IA
-  quantitativo?: string;      // medição/quantitativo verificado em campo pelo RT
-  memorialDescritivo?: string; // plano de ação + memorial descritivo gerado pela IA (Seção 9)
-  correlacaoFotoPatologia?: 'CONFIRMADA' | 'DIVERGENTE' | 'INCONCLUSIVA';
-  observacaoDivergencia?: string;
-  composicoesAplicadas?: string[]; // ids de Composicao (OrcamentoService) vinculadas a este item — Seção 8
+  ocorrencias: FichaDano[];
 }
 
 export interface FotoGeral {
@@ -45,19 +62,22 @@ export interface Vistoria {
   memoriaDescritivo?: string;       // Memorial Descritivo da Edificação — aparece na Seção 4
   artRrtNumero?: string;
   mapaImagemBase64?: string;
-  codigoPatrimonial?: string;
-  situacaoOperacional?: string;     // Em Uso / Desativado / Em Reforma / Crítico em Manutenção / Interditado
-  tipoAmbiente?: string;            // Urbano / Rural / Industrial
-  acessibilidade?: string;          // Atende / Atende Parcialmente / Não Atende
   fotosGerais?: FotoGeral[];        // fotos situacionais da edificação (max 4, JPEG comprimidas)
   tipoUso?: string;                 // tipologia/uso da edificação (Residencial, Comercial, etc.)
-  contrato?: string;                // número ou identificação do contrato
   contratanteCnpj?: string;         // CNPJ do contratante
   contratanteRazaoSocial?: string;  // razão social do contratante
-  numeroOs?: string;                // número da Ordem de Serviço
-  dataOs?: string;                  // data de emissão da OS
-  nomeFiscal?: string;              // nome do fiscal do contrato
-  matriculaFiscal?: string;         // número de matrícula do fiscal
+  solicitanteEndereco?: string;
+  responsavelLegalNome?: string;
+  responsavelLegalDocumento?: string;
+  padraoAcabamento?: 'Alto' | 'Normal' | 'Baixo';
+  numeroPavimentos?: string;
+  sistemaEstruturalPredominante?: string;
+  sistemaFundacao?: string;
+  horarioFuncionamento?: string;
+  nivelInspecao?: '1' | '2' | '3';
+  nivelInspecaoMetodologia?: string;
+  nivelInspecaoJustificativa?: string;
+  contadorFichas: number;           // default 0
   dateCreated: string;
   dateUpdated: string;
   progress: number;
@@ -73,6 +93,18 @@ const SCHEMA_ANALISE_EVIDENCIA = {
     observacaoDivergencia: { type: Type.STRING },
   },
   required: ['texto', 'severitySugerida', 'correlacaoFotoPatologia'],
+};
+
+const METODOLOGIA_NIVEL: Record<'1' | '2' | '3', string> = {
+  '1': 'A metodologia adotada para o Nível 1 baseia-se em inspeção predominantemente sensorial (visual), de caráter expedito, realizada a partir do solo ou de pontos de observação acessíveis, sem auxílio de equipamentos de ensaio avançados ou procedimentos destrutivos. Objetiva identificar anomalias e falhas aparentes para subsidiar as diretrizes de manutenção periódica.',
+  '2': 'A metodologia adotada para o Nível 2 engloba a verificação visual detalhada e sistemática de todos os elementos acessíveis da edificação, complementada pela análise minuciosa da documentação técnica disponível (como projetos, manuais de uso e relatórios de manutenção anteriores). Utiliza-se de medições locais de campo e classificação estruturada de prioridades.',
+  '3': 'A metodologia adotada para o Nível 3 consiste em auditoria técnica e diagnóstica de alta complexidade. Envolve a realização de ensaios tecnológicos in situ ou em laboratório (provas de carga, esclerometria, ultrassom, ensaio de carbonatação, termografia, etc.), análise aprofundada de projetos e acompanhamento da evolução de manifestações patológicas específicas.'
+};
+
+const JUSTIFICATIVA_NIVEL: Record<'1' | '2' | '3', string> = {
+  '1': 'Justifica-se a adoção do Nível 1 pela inexistência de documentação técnica histórica do imóvel, associada a uma demanda de vistoria preliminar para identificação rápida de manifestações patológicas aparentes, sem indícios iniciais de risco estrutural generalizado ou iminente que exijam ensaios específicos.',
+  '2': 'Justifica-se a adoção do Nível 2 devido à existência de acervo documental parcial ou completo da edificação, necessitando-se de uma avaliação sistemática e detalhada para organizar o planejamento de manutenção preventiva/corretiva a médio prazo.',
+  '3': 'Justifica-se a adoção do Nível 3 pela constatação prévia de graves anomalias com potencial comprometimento estrutural ou de segurança, demandando-se ensaios específicos e investigação profunda para determinar causas, mecanismos de degradação e diretrizes precisas de reabilitação.'
 };
 
 @Component({
@@ -131,7 +163,7 @@ export class ChecklistInspecaoComponent implements OnInit {
     // Fecha qualquer galeria anterior (libera memória) antes de abrir a nova.
     this.fecharGaleria();
 
-    const ids = item.id_evidencias ?? [];
+    const ids = this.obterOcorrenciaAtiva(item).id_evidencias ?? [];
     const carregadas: { url: string; ev: Evidencia }[] = [];
     for (const id of ids) {
       const ev = await this.dbService.getEvidencia(id);
@@ -160,23 +192,64 @@ export class ChecklistInspecaoComponent implements OnInit {
   novoMemoriaDescritivo = signal('');
   novoArtRrt = signal('');
   novaMapaImagemBase64 = signal<string | null>(null);
-  novoCodigoPatrimonial = signal('');
-  novoSituacaoOperacional = signal('');
-  novoTipoAmbiente = signal('');
-  novoAcessibilidade = signal('');
   novoFotosGerais = signal<FotoGeral[]>([]);
   novoTipoUso = signal('');
-  novoContrato = signal('');
   novoContratanteCnpj = signal('');
   novoContratanteRazaoSocial = signal('');
-  novoNumeroOs = signal('');
-  novoDataOs = signal('');
-  novoNomeFiscal = signal('');
-  novoMatriculaFiscal = signal('');
   novoLat = signal<number | null>(null);
   novoLng = signal<number | null>(null);
   novoGpsAccuracy = signal<number | null>(null);
   selecaoSistemas = signal<{ [key: string]: boolean }>({}); // chave: "systemKey-typologyTitle"
+
+  // Novos campos do Bloco 2a
+  novoSolicitanteEndereco = signal('');
+  novoResponsavelLegalNome = signal('');
+  novoResponsavelLegalDocumento = signal('');
+  novoPadraoAcabamento = signal<'Alto' | 'Normal' | 'Baixo'>('Normal');
+  novoNumeroPavimentos = signal('');
+  novoSistemaEstruturalPredominante = signal('');
+  novoSistemaFundacao = signal('');
+  novoHorarioFuncionamento = signal('');
+  novoNivelInspecao = signal<'1' | '2' | '3'>('1');
+  novoNivelInspecaoMetodologia = signal('');
+  novoNivelInspecaoJustificativa = signal('');
+
+  obterOuCriarOcorrenciaAtiva(item: ChecklistItem): FichaDano {
+    if (!item.ocorrencias) {
+      item.ocorrencias = [];
+    }
+    if (item.ocorrencias.length === 0) {
+      const nova: FichaDano = {
+        id: 'ficha-' + crypto.randomUUID(),
+        numeroFicha: 1,
+        notes: '',
+        dateCreated: new Date().toISOString(),
+        dateUpdated: new Date().toISOString()
+      };
+      item.ocorrencias.push(nova);
+    }
+    return item.ocorrencias[0];
+  }
+
+  obterOcorrenciaAtiva(item: ChecklistItem): FichaDano {
+    if (item.ocorrencias && item.ocorrencias.length > 0) {
+      return item.ocorrencias[0];
+    }
+    return {
+      id: '',
+      numeroFicha: 1,
+      notes: '',
+      dateCreated: '',
+      dateUpdated: ''
+    };
+  }
+
+  onNivelInspecaoChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value as '1' | '2' | '3';
+    this.novoNivelInspecao.set(val);
+    this.novoNivelInspecaoMetodologia.set(METODOLOGIA_NIVEL[val] || '');
+    this.novoNivelInspecaoJustificativa.set(JUSTIFICATIVA_NIVEL[val] || '');
+  }
 
   // Filtros de visualização
   filtroStatus = signal<'TODOS' | 'PENDENTE' | 'PASS' | 'FAIL' | 'NA'>('TODOS');
@@ -306,19 +379,85 @@ export class ChecklistInspecaoComponent implements OnInit {
     try {
       await this.dbService.migrarDoLocalStorageSeNecessario();
       const lista = await this.dbService.getAllVistorias();
-      // Mapear severidades antigas para o padrão canônico NBR 16747
+      
+      let mudouQualquerCoisa = false;
+      // Mapear dados antigos e severidades ao formato canônico do Bloco 2a (ocorrencias / FichaDano)
       lista.forEach(v => {
         if (v.items) {
           v.items.forEach(item => {
-            if (item.severity) {
-              const s = String(item.severity).toUpperCase();
-              if (s === 'MÍNIMA' || s === 'MINIMA') item.severity = 'Mínimo';
-              else if (s === 'MÉDIA' || s === 'MEDIA') item.severity = 'Regular';
-              else if (s === 'GRAVE') item.severity = 'Crítico';
+            // Se o item não possui ocorrencias, inicializa e migra campos legados
+            if (!item.ocorrencias) {
+              item.ocorrencias = [];
+              mudouQualquerCoisa = true;
+            }
+            const legacyItem = item as any;
+            if (item.ocorrencias.length === 0) {
+              if (
+                legacyItem.notes !== undefined ||
+                legacyItem.severity !== undefined ||
+                legacyItem.id_evidencias !== undefined ||
+                legacyItem.diagnostico_ia !== undefined ||
+                legacyItem.quantitativo !== undefined ||
+                legacyItem.memorialDescritivo !== undefined ||
+                legacyItem.correlacaoFotoPatologia !== undefined ||
+                legacyItem.observacaoDivergencia !== undefined ||
+                legacyItem.composicoesAplicadas !== undefined
+              ) {
+                item.ocorrencias.push({
+                  id: 'ficha-' + crypto.randomUUID(),
+                  numeroFicha: 1,
+                  notes: legacyItem.notes ?? '',
+                  severity: legacyItem.severity,
+                  id_evidencias: legacyItem.id_evidencias,
+                  diagnostico_ia: legacyItem.diagnostico_ia,
+                  quantitativo: legacyItem.quantitativo,
+                  memorialDescritivo: legacyItem.memorialDescritivo,
+                  correlacaoFotoPatologia: legacyItem.correlacaoFotoPatologia,
+                  observacaoDivergencia: legacyItem.observacaoDivergencia,
+                  composicoesAplicadas: legacyItem.composicoesAplicadas,
+                  dateCreated: v.dateCreated,
+                  dateUpdated: v.dateUpdated
+                });
+                
+                mudouQualquerCoisa = true;
+
+                // Limpa campos antigos
+                delete legacyItem.notes;
+                delete legacyItem.severity;
+                delete legacyItem.id_evidencias;
+                delete legacyItem.diagnostico_ia;
+                delete legacyItem.quantitativo;
+                delete legacyItem.memorialDescritivo;
+                delete legacyItem.correlacaoFotoPatologia;
+                delete legacyItem.observacaoDivergencia;
+                delete legacyItem.composicoesAplicadas;
+              }
+            }
+            
+            // Normalizar severidades dentro da ficha ativa
+            if (item.ocorrencias.length > 0) {
+              const oc = item.ocorrencias[0];
+              if (oc.severity) {
+                const s = String(oc.severity).toUpperCase();
+                let novaSev = oc.severity;
+                if (s === 'MÍNIMA' || s === 'MINIMA') novaSev = 'Mínimo';
+                else if (s === 'MÉDIA' || s === 'MEDIA') novaSev = 'Regular';
+                else if (s === 'GRAVE') novaSev = 'Crítico';
+
+                if (novaSev !== oc.severity) {
+                  oc.severity = novaSev;
+                  mudouQualquerCoisa = true;
+                }
+              }
             }
           });
         }
       });
+
+      if (mudouQualquerCoisa) {
+        await this.dbService.saveAllVistorias(lista);
+      }
+
       // Ordenar por última atualização
       lista.sort((a, b) => new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime());
       this.vistorias.set(lista);
@@ -354,23 +493,28 @@ export class ChecklistInspecaoComponent implements OnInit {
     this.novoMemoriaDescritivo.set('');
     this.novoArtRrt.set('');
     this.novaMapaImagemBase64.set(null);
-    this.novoCodigoPatrimonial.set('');
-    this.novoSituacaoOperacional.set('');
-    this.novoTipoAmbiente.set('');
-    this.novoAcessibilidade.set('');
     this.novoFotosGerais.set([]);
     this.novoTipoUso.set('');
-    this.novoContrato.set('');
     this.novoContratanteCnpj.set('');
     this.novoContratanteRazaoSocial.set('');
-    this.novoNumeroOs.set('');
-    this.novoDataOs.set('');
-    this.novoNomeFiscal.set('');
-    this.novoMatriculaFiscal.set('');
     this.novoLat.set(null);
     this.novoLng.set(null);
     this.novoGpsAccuracy.set(null);
     this.selecaoSistemas.set({});
+    
+    // Novos campos do Bloco 2a
+    this.novoSolicitanteEndereco.set('');
+    this.novoResponsavelLegalNome.set('');
+    this.novoResponsavelLegalDocumento.set('');
+    this.novoPadraoAcabamento.set('Normal');
+    this.novoNumeroPavimentos.set('');
+    this.novoSistemaEstruturalPredominante.set('');
+    this.novoSistemaFundacao.set('');
+    this.novoHorarioFuncionamento.set('');
+    this.novoNivelInspecao.set('1');
+    this.novoNivelInspecaoMetodologia.set(METODOLOGIA_NIVEL['1']);
+    this.novoNivelInspecaoJustificativa.set(JUSTIFICATIVA_NIVEL['1']);
+
     this.modoExibicao.set('CRIACAO');
     // Captura GPS em background — pronto antes de o RT terminar de preencher o formulário
     if (navigator.geolocation) {
@@ -397,20 +541,25 @@ export class ChecklistInspecaoComponent implements OnInit {
     this.novaAreaConstruida.set(vistoria.areaConstruida ?? '');
     this.novaIdadeEdificacao.set(vistoria.idadeEdificacao ?? '');
     this.novoArtRrt.set(vistoria.artRrtNumero ?? '');
-    this.novoCodigoPatrimonial.set(vistoria.codigoPatrimonial ?? '');
-    this.novoSituacaoOperacional.set(vistoria.situacaoOperacional ?? '');
-    this.novoTipoAmbiente.set(vistoria.tipoAmbiente ?? '');
-    this.novoAcessibilidade.set(vistoria.acessibilidade ?? '');
     this.novaMapaImagemBase64.set(vistoria.mapaImagemBase64 ?? null);
     this.novoFotosGerais.set(vistoria.fotosGerais ? [...vistoria.fotosGerais] : []);
     this.novoTipoUso.set(vistoria.tipoUso ?? '');
-    this.novoContrato.set(vistoria.contrato ?? '');
     this.novoContratanteCnpj.set(vistoria.contratanteCnpj ?? '');
     this.novoContratanteRazaoSocial.set(vistoria.contratanteRazaoSocial ?? '');
-    this.novoNumeroOs.set(vistoria.numeroOs ?? '');
-    this.novoDataOs.set(vistoria.dataOs ?? '');
-    this.novoNomeFiscal.set(vistoria.nomeFiscal ?? '');
-    this.novoMatriculaFiscal.set(vistoria.matriculaFiscal ?? '');
+
+    // Novos campos do Bloco 2a
+    this.novoSolicitanteEndereco.set(vistoria.solicitanteEndereco ?? '');
+    this.novoResponsavelLegalNome.set(vistoria.responsavelLegalNome ?? '');
+    this.novoResponsavelLegalDocumento.set(vistoria.responsavelLegalDocumento ?? '');
+    this.novoPadraoAcabamento.set(vistoria.padraoAcabamento ?? 'Normal');
+    this.novoNumeroPavimentos.set(vistoria.numeroPavimentos ?? '');
+    this.novoSistemaEstruturalPredominante.set(vistoria.sistemaEstruturalPredominante ?? '');
+    this.novoSistemaFundacao.set(vistoria.sistemaFundacao ?? '');
+    this.novoHorarioFuncionamento.set(vistoria.horarioFuncionamento ?? '');
+    this.novoNivelInspecao.set(vistoria.nivelInspecao ?? '1');
+    this.novoNivelInspecaoMetodologia.set(vistoria.nivelInspecaoMetodologia ?? (vistoria.nivelInspecao ? METODOLOGIA_NIVEL[vistoria.nivelInspecao] : ''));
+    this.novoNivelInspecaoJustificativa.set(vistoria.nivelInspecaoJustificativa ?? (vistoria.nivelInspecao ? JUSTIFICATIVA_NIVEL[vistoria.nivelInspecao] : ''));
+
     this.modoExibicao.set('EDICAO');
   }
 
@@ -423,20 +572,25 @@ export class ChecklistInspecaoComponent implements OnInit {
       areaConstruida: this.novaAreaConstruida().trim() || undefined,
       idadeEdificacao: this.novaIdadeEdificacao().trim() || undefined,
       artRrtNumero: this.novoArtRrt().trim() || undefined,
-      codigoPatrimonial: this.novoCodigoPatrimonial().trim() || undefined,
-      situacaoOperacional: this.novoSituacaoOperacional() || undefined,
-      tipoAmbiente: this.novoTipoAmbiente() || undefined,
-      acessibilidade: this.novoAcessibilidade() || undefined,
       mapaImagemBase64: this.novaMapaImagemBase64() ?? undefined,
       fotosGerais: this.novoFotosGerais().length > 0 ? [...this.novoFotosGerais()] : undefined,
       tipoUso: this.novoTipoUso() || undefined,
-      contrato: this.novoContrato().trim() || undefined,
       contratanteCnpj: this.novoContratanteCnpj().trim() || undefined,
       contratanteRazaoSocial: this.novoContratanteRazaoSocial().trim() || undefined,
-      numeroOs: this.novoNumeroOs().trim() || undefined,
-      dataOs: this.novoDataOs().trim() || undefined,
-      nomeFiscal: this.novoNomeFiscal().trim() || undefined,
-      matriculaFiscal: this.novoMatriculaFiscal().trim() || undefined,
+
+      // Novos campos do Bloco 2a
+      solicitanteEndereco: this.novoSolicitanteEndereco().trim() || undefined,
+      responsavelLegalNome: this.novoResponsavelLegalNome().trim() || undefined,
+      responsavelLegalDocumento: this.novoResponsavelLegalDocumento().trim() || undefined,
+      padraoAcabamento: this.novoPadraoAcabamento(),
+      numeroPavimentos: this.novoNumeroPavimentos().trim() || undefined,
+      sistemaEstruturalPredominante: this.novoSistemaEstruturalPredominante().trim() || undefined,
+      sistemaFundacao: this.novoSistemaFundacao().trim() || undefined,
+      horarioFuncionamento: this.novoHorarioFuncionamento().trim() || undefined,
+      nivelInspecao: this.novoNivelInspecao(),
+      nivelInspecaoMetodologia: this.novoNivelInspecaoMetodologia().trim() || undefined,
+      nivelInspecaoJustificativa: this.novoNivelInspecaoJustificativa().trim() || undefined,
+
       dateUpdated: new Date().toISOString(),
     };
     const lista = this.vistorias().map(v => v.id === atualizada.id ? atualizada : v);
@@ -444,7 +598,7 @@ export class ChecklistInspecaoComponent implements OnInit {
     this.vistorias.set(lista);
     this.vistoriaEmEdicao.set(null);
     this.modoExibicao.set('LISTA');
-    this.toastService.show('Dados do imóvel atualizados com sucesso.', 'success');
+    this.toastService.show('Dados do imóvel updated com sucesso.', 'success');
   }
 
   cancelarEdicao(): void {
@@ -515,7 +669,7 @@ export class ChecklistInspecaoComponent implements OnInit {
               title: `Inspeção Geral de Integridade`,
               description: `Realizar varredura visual em busca de deformações, anomalias de acabamento ou fissuras superficiais na tecnologia: ${t.title}.`,
               status: 'PENDENTE',
-              notes: ''
+              ocorrencias: []
             });
 
             // 2. Criar itens específicos para cada patologia cadastrada nesta tipologia
@@ -531,7 +685,7 @@ export class ChecklistInspecaoComponent implements OnInit {
                 title: `Investigar: ${p.title}`,
                 description: `Avaliar se há ocorrência de ${p.title}. Sintomas de alerta: ${p.sintomas}. Causas prováveis na vistoria: ${p.causas}.`,
                 status: 'PENDENTE',
-                notes: ''
+                ocorrencias: []
               });
             });
           }
@@ -551,19 +705,25 @@ export class ChecklistInspecaoComponent implements OnInit {
       memoriaDescritivo: this.novoMemoriaDescritivo().trim() || undefined,
       artRrtNumero: this.novoArtRrt().trim() || undefined,
       mapaImagemBase64: this.novaMapaImagemBase64() ?? undefined,
-      codigoPatrimonial: this.novoCodigoPatrimonial().trim() || undefined,
-      situacaoOperacional: this.novoSituacaoOperacional() || undefined,
-      tipoAmbiente: this.novoTipoAmbiente() || undefined,
-      acessibilidade: this.novoAcessibilidade() || undefined,
       fotosGerais: this.novoFotosGerais().length > 0 ? this.novoFotosGerais() : undefined,
       tipoUso: this.novoTipoUso() || undefined,
-      contrato: this.novoContrato().trim() || undefined,
       contratanteCnpj: this.novoContratanteCnpj().trim() || undefined,
       contratanteRazaoSocial: this.novoContratanteRazaoSocial().trim() || undefined,
-      numeroOs: this.novoNumeroOs().trim() || undefined,
-      dataOs: this.novoDataOs().trim() || undefined,
-      nomeFiscal: this.novoNomeFiscal().trim() || undefined,
-      matriculaFiscal: this.novoMatriculaFiscal().trim() || undefined,
+
+      // Novos campos do Bloco 2a
+      solicitanteEndereco: this.novoSolicitanteEndereco().trim() || undefined,
+      responsavelLegalNome: this.novoResponsavelLegalNome().trim() || undefined,
+      responsavelLegalDocumento: this.novoResponsavelLegalDocumento().trim() || undefined,
+      padraoAcabamento: this.novoPadraoAcabamento(),
+      numeroPavimentos: this.novoNumeroPavimentos().trim() || undefined,
+      sistemaEstruturalPredominante: this.novoSistemaEstruturalPredominante().trim() || undefined,
+      sistemaFundacao: this.novoSistemaFundacao().trim() || undefined,
+      horarioFuncionamento: this.novoHorarioFuncionamento().trim() || undefined,
+      nivelInspecao: this.novoNivelInspecao(),
+      nivelInspecaoMetodologia: this.novoNivelInspecaoMetodologia().trim() || undefined,
+      nivelInspecaoJustificativa: this.novoNivelInspecaoJustificativa().trim() || undefined,
+
+      contadorFichas: 0,
       dateCreated: new Date().toISOString(),
       dateUpdated: new Date().toISOString(),
       progress: 0,
@@ -631,12 +791,13 @@ export class ChecklistInspecaoComponent implements OnInit {
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId) {
         const itemAtualizado = { ...item, status: novoStatus };
+        const oc = this.obterOuCriarOcorrenciaAtiva(itemAtualizado);
         // Resetar gravidade se mudou de falha (FAIL) para outra coisa
         if (novoStatus !== 'FAIL') {
-          delete itemAtualizado.severity;
-        } else if (!itemAtualizado.severity) {
+          delete oc.severity;
+        } else if (!oc.severity) {
           // Valor padrão para não conforme
-          itemAtualizado.severity = 'Regular';
+          oc.severity = 'Regular';
         }
         return itemAtualizado;
       }
@@ -653,7 +814,10 @@ export class ChecklistInspecaoComponent implements OnInit {
 
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId && (item.status === 'FAIL' || item.status === 'NAO_CONFORME')) {
-        return { ...item, severity: novaGravidade };
+        const itemAtualizado = { ...item };
+        const oc = this.obterOuCriarOcorrenciaAtiva(itemAtualizado);
+        oc.severity = novaGravidade;
+        return itemAtualizado;
       }
       return item;
     });
@@ -664,12 +828,14 @@ export class ChecklistInspecaoComponent implements OnInit {
 
   toggleComposicaoItem(itemId: string, composicaoId: string): void {
     this.aplicarMudancaNoItem(itemId, it => {
-      const atuais = it.composicoesAplicadas ?? [];
+      const oc = this.obterOuCriarOcorrenciaAtiva(it);
+      const atuais = oc.composicoesAplicadas ?? [];
       const jaAplicada = atuais.includes(composicaoId);
       const novas = jaAplicada
         ? atuais.filter(id => id !== composicaoId)
         : [...atuais, composicaoId];
-      return { ...it, composicoesAplicadas: novas };
+      oc.composicoesAplicadas = novas;
+      return it;
     });
   }
 
@@ -725,8 +891,11 @@ export class ChecklistInspecaoComponent implements OnInit {
 
       await this.dbService.saveEvidencia(ev);
 
-      const novas = [...(item.id_evidencias ?? []), idEvidencia];
-      this.aplicarMudancaNoItem(item.id, it => ({ ...it, id_evidencias: novas }));
+      this.aplicarMudancaNoItem(item.id, it => {
+        const oc = this.obterOuCriarOcorrenciaAtiva(it);
+        oc.id_evidencias = [...(oc.id_evidencias ?? []), idEvidencia];
+        return it;
+      });
 
       this.capturando.set(false);
       this.analisandoIa.set(true);
@@ -735,17 +904,21 @@ export class ChecklistInspecaoComponent implements OnInit {
       const diag = await this.analisarComGemini(item, base64);
 
       if (diag?.texto) {
-        this.aplicarMudancaNoItem(item.id, it => ({
-          ...it,
-          diagnostico_ia: diag.texto,
-          correlacaoFotoPatologia: diag.correlacaoFotoPatologia,
-          observacaoDivergencia: diag.observacaoDivergencia,
-        }));
+        this.aplicarMudancaNoItem(item.id, it => {
+          const oc = this.obterOuCriarOcorrenciaAtiva(it);
+          oc.diagnostico_ia = diag.texto;
+          oc.correlacaoFotoPatologia = diag.correlacaoFotoPatologia;
+          oc.observacaoDivergencia = diag.observacaoDivergencia;
+          return it;
+        });
       }
 
       const itemAtualizado = this.vistoriaAtiva()?.items.find(it => it.id === item.id);
-      if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && (!itemAtualizado || !itemAtualizado.severity)) {
-        this.alterarGravidadeItem(item.id, diag.severitySugerida);
+      if (itemAtualizado) {
+        const ocAtivo = this.obterOcorrenciaAtiva(itemAtualizado);
+        if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && !ocAtivo.severity) {
+          this.alterarGravidadeItem(item.id, diag.severitySugerida);
+        }
       }
     } catch (e) {
       console.error('Falha no processamento do arquivo/análise', e);
@@ -787,11 +960,12 @@ export class ChecklistInspecaoComponent implements OnInit {
 
     this.gerandoMemorialId.set(item.id);
 
-    const fotoNaoConfiavel = item.correlacaoFotoPatologia === 'DIVERGENTE' || item.correlacaoFotoPatologia === 'INCONCLUSIVA';
+    const oc = this.obterOuCriarOcorrenciaAtiva(item);
+    const fotoNaoConfiavel = oc.correlacaoFotoPatologia === 'DIVERGENTE' || oc.correlacaoFotoPatologia === 'INCONCLUSIVA';
 
     const blocoDiagnosticoCampo = fotoNaoConfiavel
-      ? `AVISO: a evidência fotográfica deste item foi classificada como ${item.correlacaoFotoPatologia} em relação à patologia descrita (${item.observacaoDivergencia?.trim() || 'sem observação adicional registrada'}). IGNORE totalmente esta análise de imagem — ela não corresponde à patologia do item. Baseie o diagnóstico técnico EXCLUSIVAMENTE na anotação do Responsável Técnico abaixo.`
-      : (item.diagnostico_ia?.trim() || 'Diagnóstico não gerado para este item.');
+      ? `AVISO: a evidência fotográfica deste item foi classificada como ${oc.correlacaoFotoPatologia} em relação à patologia descrita (${oc.observacaoDivergencia?.trim() || 'sem observação adicional registrada'}). IGNORE totalmente esta análise de imagem — ela não corresponde à patologia do item. Baseie o diagnóstico técnico EXCLUSIVAMENTE na anotação do Responsável Técnico abaixo.`
+      : (oc.diagnostico_ia?.trim() || 'Diagnóstico não gerado para este item.');
 
     const prompt = `Você é um engenheiro civil perito em manutenção e patologia predial, especialista em inspeção conforme ABNT NBR 16747 e ABNT NBR 5674.
 
@@ -804,14 +978,14 @@ Edificação: ${ativa.buildingName}
 Sistema Construtivo: ${item.systemTitle}
 Tipologia: ${item.typologyTitle}
 Item de Inspeção: ${item.title}
-Grau de Risco (NBR 16747): ${item.severity ?? 'Não classificado'}
-Quantitativo Verificado em Campo: ${item.quantitativo?.trim() || 'Não informado — use estimativa técnica proporcional'}
+Grau de Risco (NBR 16747): ${oc.severity ?? 'Não classificado'}
+Quantitativo Verificado em Campo: ${oc.quantitativo?.trim() || 'Não informado — use estimativa técnica proporcional'}
 
 ===== DIAGNÓSTICO TÉCNICO DE CAMPO =====
 ${blocoDiagnosticoCampo}
 
 ===== ANOTAÇÃO DO RESPONSÁVEL TÉCNICO =====
-${item.notes?.trim() || 'Sem anotação de campo.'}
+${oc.notes?.trim() || 'Sem anotação de campo.'}
 
 ===== ESTRUTURA OBRIGATÓRIA DO MEMORIAL =====
 
@@ -844,7 +1018,11 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     try {
       const resposta = await this.geminiService.generateText(prompt);
       const memorial = this.geminiService.sanitizeAiText(resposta);
-      this.aplicarMudancaNoItem(item.id, it => ({ ...it, memorialDescritivo: memorial }));
+      this.aplicarMudancaNoItem(item.id, it => {
+        const o = this.obterOuCriarOcorrenciaAtiva(it);
+        o.memorialDescritivo = memorial;
+        return it;
+      });
       this.toastService.show('Memorial descritivo gerado. Revise antes de emitir o RTIPA.', 'success');
     } catch (error) {
       console.error('Erro ao gerar memorial descritivo:', error);
@@ -1023,8 +1201,11 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
       await this.dbService.saveEvidencia(ev);
 
-      const novas = [...(item.id_evidencias ?? []), idEvidencia];
-      this.aplicarMudancaNoItem(item.id, it => ({ ...it, id_evidencias: novas }));
+      this.aplicarMudancaNoItem(item.id, it => {
+        const oc = this.obterOuCriarOcorrenciaAtiva(it);
+        oc.id_evidencias = [...(oc.id_evidencias ?? []), idEvidencia];
+        return it;
+      });
 
       this.capturando.set(false);
       this.analisandoIa.set(true);
@@ -1033,17 +1214,21 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       const diag = await this.analisarComGemini(item, base64);
 
       if (diag?.texto) {
-        this.aplicarMudancaNoItem(item.id, it => ({
-          ...it,
-          diagnostico_ia: diag.texto,
-          correlacaoFotoPatologia: diag.correlacaoFotoPatologia,
-          observacaoDivergencia: diag.observacaoDivergencia,
-        }));
+        this.aplicarMudancaNoItem(item.id, it => {
+          const oc = this.obterOuCriarOcorrenciaAtiva(it);
+          oc.diagnostico_ia = diag.texto;
+          oc.correlacaoFotoPatologia = diag.correlacaoFotoPatologia;
+          oc.observacaoDivergencia = diag.observacaoDivergencia;
+          return it;
+        });
       }
 
       const itemAtualizado = this.vistoriaAtiva()?.items.find(it => it.id === item.id);
-      if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && (!itemAtualizado || !itemAtualizado.severity)) {
-        this.alterarGravidadeItem(item.id, diag.severitySugerida);
+      if (itemAtualizado) {
+        const ocAtivo = this.obterOcorrenciaAtiva(itemAtualizado);
+        if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && !ocAtivo.severity) {
+          this.alterarGravidadeItem(item.id, diag.severitySugerida);
+        }
       }
     } catch (e) {
       console.error('Falha na captura/análise de evidência', e);
@@ -1062,7 +1247,10 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId) {
-        return { ...item, notes: valor };
+        const itemAtualizado = { ...item };
+        const oc = this.obterOuCriarOcorrenciaAtiva(itemAtualizado);
+        oc.notes = valor;
+        return itemAtualizado;
       }
       return item;
     });
@@ -1078,7 +1266,10 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId) {
-        return { ...item, quantitativo: valor };
+        const itemAtualizado = { ...item };
+        const oc = this.obterOuCriarOcorrenciaAtiva(itemAtualizado);
+        oc.quantitativo = valor;
+        return itemAtualizado;
       }
       return item;
     });
@@ -1162,8 +1353,10 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const itens = ativa.items ?? [];
 
     for (const item of itens) {
-      if (item.id_evidencias?.length) {
-        for (const evId of item.id_evidencias) {
+      const oc = item.ocorrencias?.[0];
+      const idEvidencias = oc?.id_evidencias ?? [];
+      if (idEvidencias.length) {
+        for (const evId of idEvidencias) {
           try {
             const ev = await this.dbService.getEvidencia(evId);
             if (ev?.blob) {
@@ -1209,7 +1402,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           badgeClass = 'badge-status-ok'; badgeText = 'CONFORME';
         } else if (item.status === 'FAIL' || item.status === 'NAO_CONFORME') {
           badgeClass = 'badge-status-nc';
-          badgeText = `NÃO CONFORME · ${item.severity ? item.severity.toUpperCase() : 'PENDENTE'}`;
+          const oc = item.ocorrencias?.[0];
+          badgeText = `NÃO CONFORME · ${oc?.severity ? oc.severity.toUpperCase() : 'PENDENTE'}`;
         } else if (item.status === 'NA' || item.status === 'NAO_APLICAVEL') {
           badgeClass = 'badge-status-na'; badgeText = 'N/A';
         }
@@ -1643,15 +1837,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             // Linha 4: Empresa + ART/RRT
             rows += `<tr><td style="${tdL1}">Empresa / CNPJ</td><td style="${tdV1}">${profile.companyName || ''} · ${profile.companyCnpj || ''}</td>${ativa.artRrtNumero ? `<td style="${tdL1}">ART / RRT</td><td style="${tdV1}">${ativa.artRrtNumero}</td>` : `<td colspan="2" style="border:1px solid #D8D0C6;background:#fafafa;"></td>`}</tr>`;
 
-            // Campos de contrato (somente se preenchidos)
-            if (ativa.contrato || ativa.numeroOs) {
-              rows += `<tr><td style="${tdL1}">Contrato</td><td style="${tdV1}">${ativa.contrato || '—'}</td><td style="${tdL1}">N° OS</td><td style="${tdV1}">${ativa.numeroOs || '—'}</td></tr>`;
-            }
-            if (ativa.dataOs || ativa.contratanteRazaoSocial) {
-              rows += `<tr><td style="${tdL1}">Contratante</td><td style="${tdV1}">${ativa.contratanteRazaoSocial || '—'}${ativa.contratanteCnpj ? `<br><span style="font-size:7.5pt;color:#4A5A66;">CNPJ: ${this.normalizarCnpjExibicao(ativa.contratanteCnpj)}</span>` : ''}</td><td style="${tdL1}">Data da OS</td><td style="${tdV1}">${ativa.dataOs || '—'}</td></tr>`;
-            }
-            if (ativa.nomeFiscal || ativa.matriculaFiscal) {
-              rows += `<tr><td style="${tdL1}">Fiscal do Contrato</td><td style="${tdV1}">${ativa.nomeFiscal || '—'}</td><td style="${tdL1}">Matrícula</td><td style="${tdV1}">${ativa.matriculaFiscal || '—'}</td></tr>`;
+            if (ativa.contratanteRazaoSocial) {
+              rows += `<tr><td style="${tdL1}">Contratante</td><td colspan="3" style="${tdV1}">${ativa.contratanteRazaoSocial}${ativa.contratanteCnpj ? ` · CNPJ: ${this.normalizarCnpjExibicao(ativa.contratanteCnpj)}` : ''}</td></tr>`;
             }
 
             return `<table style="width:100%;border-collapse:collapse;margin-bottom:4mm;">${rows}</table>`;
@@ -1847,13 +2034,23 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     // 4) TABELA DE DADOS — pares de 2 colunas, sem Denominação nem Endereço
     const campos: { l: string; v: string }[] = [];
     if (ativa.tipoUso) campos.push({ l: 'Tipo de Uso / Tipologia', v: ativa.tipoUso });
-    if (ativa.codigoPatrimonial) campos.push({ l: 'Cód. Patrimonial', v: ativa.codigoPatrimonial });
     if (ativa.areaConstruida) campos.push({ l: 'Área Construída', v: ativa.areaConstruida });
     if (ativa.idadeEdificacao) campos.push({ l: 'Idade da Edificação', v: ativa.idadeEdificacao });
     if (ativa.artRrtNumero) campos.push({ l: 'ART / RRT', v: ativa.artRrtNumero });
-    if (ativa.situacaoOperacional) campos.push({ l: 'Situação Operacional', v: ativa.situacaoOperacional });
-    if (ativa.tipoAmbiente) campos.push({ l: 'Tipo de Ambiente', v: ativa.tipoAmbiente });
-    if (ativa.acessibilidade) campos.push({ l: 'Acessibilidade (NBR 9050)', v: ativa.acessibilidade });
+    
+    // Novos campos do Bloco 2a
+    if (ativa.solicitanteEndereco) campos.push({ l: 'Endereço Solicitante', v: ativa.solicitanteEndereco });
+    if (ativa.responsavelLegalNome) campos.push({ l: 'Responsável Legal', v: ativa.responsavelLegalNome });
+    if (ativa.responsavelLegalDocumento) campos.push({ l: 'Doc. Resp. Legal', v: ativa.responsavelLegalDocumento });
+    if (ativa.padraoAcabamento) campos.push({ l: 'Padrão de Acabamento', v: ativa.padraoAcabamento });
+    if (ativa.numeroPavimentos) campos.push({ l: 'N° de Pavimentos', v: ativa.numeroPavimentos });
+    if (ativa.sistemaEstruturalPredominante) campos.push({ l: 'Sistema Estrutural', v: ativa.sistemaEstruturalPredominante });
+    if (ativa.sistemaFundacao) campos.push({ l: 'Sistema de Fundação', v: ativa.sistemaFundacao });
+    if (ativa.horarioFuncionamento) campos.push({ l: 'Horário de Func.', v: ativa.horarioFuncionamento });
+    if (ativa.nivelInspecao) campos.push({ l: 'Nível de Inspeção', v: `Nível ${ativa.nivelInspecao}` });
+    if (ativa.nivelInspecaoMetodologia) campos.push({ l: 'Metodologia Nível', v: ativa.nivelInspecaoMetodologia });
+    if (ativa.nivelInspecaoJustificativa) campos.push({ l: 'Justificativa Nível', v: ativa.nivelInspecaoJustificativa });
+
     if (ativa.lat && ativa.lng) {
       campos.push({ l: 'Coordenadas GPS', v: `${ativa.lat.toFixed(5)}, ${ativa.lng.toFixed(5)}${ativa.gpsAccuracy ? ` · ±${Math.round(ativa.gpsAccuracy)}m` : ''}` });
     }
@@ -1886,7 +2083,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
   private gerarSecao8Html(itens: ChecklistItem[]): string {
     const itensComOrcamento = itens.filter(
-      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.composicoesAplicadas?.length
+      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.ocorrencias?.[0]?.composicoesAplicadas?.length
     );
 
     if (itensComOrcamento.length === 0) {
@@ -1906,8 +2103,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     for (const item of itensComOrcamento) {
       const idx = itens.findIndex(i => i.id === item.id);
       const seqStr = String(idx + 1).padStart(2, '0');
+      const oc = item.ocorrencias?.[0];
 
-      const composicoesCalc = (item.composicoesAplicadas ?? [])
+      const composicoesCalc = ((oc?.composicoesAplicadas) ?? [])
         .map(id => this.orcamentoService.getComposicao(id))
         .filter((c): c is Composicao => !!c)
         .map(c => this.orcamentoService.calcularComposicao(c));
@@ -1965,7 +2163,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
   private gerarSecao9Html(itens: ChecklistItem[]): string {
     const itensComMemorial = itens.filter(
-      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.memorialDescritivo?.trim()
+      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.ocorrencias?.[0]?.memorialDescritivo?.trim()
     );
 
     if (itensComMemorial.length === 0) {
@@ -1981,19 +2179,20 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     for (const item of itensComMemorial) {
       const idx = itens.findIndex(i => i.id === item.id);
       const seqStr = String(idx + 1).padStart(2, '0');
+      const oc = item.ocorrencias?.[0];
 
       let sevClass = '';
       let sevLabel = '';
-      if (item.severity === 'Mínimo') { sevClass = 's9-sev-min'; sevLabel = 'Risco Mínimo'; }
-      else if (item.severity === 'Regular') { sevClass = 's9-sev-reg'; sevLabel = 'Risco Regular'; }
-      else if (item.severity === 'Crítico') { sevClass = 's9-sev-cri'; sevLabel = 'Risco Crítico'; }
+      if (oc?.severity === 'Mínimo') { sevClass = 's9-sev-min'; sevLabel = 'Risco Mínimo'; }
+      else if (oc?.severity === 'Regular') { sevClass = 's9-sev-reg'; sevLabel = 'Risco Regular'; }
+      else if (oc?.severity === 'Crítico') { sevClass = 's9-sev-cri'; sevLabel = 'Risco Crítico'; }
       else { sevClass = 's9-sev-pend'; sevLabel = 'Classificação Pendente'; }
 
-      const quantDisplay = item.quantitativo?.trim()
-        ? `<div class="s9-quant"><strong>Quantitativo de campo:</strong> ${item.quantitativo.trim()}</div>`
+      const quantDisplay = oc?.quantitativo?.trim()
+        ? `<div class="s9-quant"><strong>Quantitativo de campo:</strong> ${oc.quantitativo.trim()}</div>`
         : '';
 
-      const memorialHtml = this.markdownParaHtmlPdf(item.memorialDescritivo ?? '');
+      const memorialHtml = this.markdownParaHtmlPdf(oc?.memorialDescritivo ?? '');
 
       html += `
         <div class="s9-card no-break">
@@ -2110,6 +2309,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     for (const item of itens) {
       const idx = itens.findIndex(i => i.id === item.id);
       const seqStr = String(idx + 1).padStart(2, '0');
+      const oc = item.ocorrencias?.[0];
 
       // Determinar badge e classe de status
       const isNC = item.status === 'NAO_CONFORME' || item.status === 'FAIL';
@@ -2117,13 +2317,13 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       const isNA = item.status === 'NAO_APLICAVEL' || item.status === 'NA';
 
       let statusBadge = '';
-      if (isNC) statusBadge = `<span class="nc-status-badge nc">NÃO CONFORME · ${item.severity ? item.severity.toUpperCase() : 'PENDENTE'}</span>`;
+      if (isNC) statusBadge = `<span class="nc-status-badge nc">NÃO CONFORME · ${oc?.severity ? oc.severity.toUpperCase() : 'PENDENTE'}</span>`;
       else if (isOK) statusBadge = `<span class="nc-status-badge ok">CONFORME</span>`;
       else if (isNA) statusBadge = `<span class="nc-status-badge na">N/A</span>`;
       else statusBadge = `<span class="nc-status-badge na">PENDENTE</span>`;
 
       // Separar evidências por tipo (até 2: contexto + detalhe)
-      const ids = item.id_evidencias ?? [];
+      const ids = oc?.id_evidencias ?? [];
       const evContexto = ids.map((id: string) => evidenciasMap.get(id)).find(e => e?.tipo === 'contexto');
       const evDetalhe  = ids.map((id: string) => evidenciasMap.get(id)).find(e => e?.tipo === 'detalhe');
       // fallback: se só há uma foto, coloca em contexto
@@ -2156,24 +2356,24 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
       // Diagnóstico IA — só item NÃO CONFORME, teto 600 chars
       let diagHtml = '';
-      if (isNC && item.diagnostico_ia) {
-        const diag = item.diagnostico_ia.length > 600
-          ? item.diagnostico_ia.slice(0, 597) + '…'
-          : item.diagnostico_ia;
+      if (isNC && oc?.diagnostico_ia) {
+        const diag = oc.diagnostico_ia.length > 600
+          ? oc.diagnostico_ia.slice(0, 597) + '…'
+          : oc.diagnostico_ia;
 
         let correlTag = '';
         let diagClass = 'nc-diag-full';
-        if (item.correlacaoFotoPatologia === 'CONFIRMADA') {
+        if (oc.correlacaoFotoPatologia === 'CONFIRMADA') {
           correlTag = `<span class="correl-tag ok">✓ Correlação confirmada</span>`;
-        } else if (item.correlacaoFotoPatologia === 'DIVERGENTE') {
+        } else if (oc.correlacaoFotoPatologia === 'DIVERGENTE') {
           correlTag = `<span class="correl-tag div">⚠ Foto divergente da patologia</span>`;
           diagClass = 'nc-diag-full divergente';
-        } else if (item.correlacaoFotoPatologia === 'INCONCLUSIVA') {
+        } else if (oc.correlacaoFotoPatologia === 'INCONCLUSIVA') {
           correlTag = `<span class="correl-tag inc">? Inconclusiva</span>`;
         }
 
-        const obsHtml = (item.correlacaoFotoPatologia === 'DIVERGENTE' && item.observacaoDivergencia)
-          ? `<p style="font-style:italic;margin-top:2mm;">${item.observacaoDivergencia}</p>`
+        const obsHtml = (oc.correlacaoFotoPatologia === 'DIVERGENTE' && oc.observacaoDivergencia)
+          ? `<p style="font-style:italic;margin-top:2mm;">${oc.observacaoDivergencia}</p>`
           : '';
 
         diagHtml = `
@@ -2185,14 +2385,14 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       }
 
       // Anotação do RT — teto 500 chars
-      const notesTexto = item.notes?.trim();
+      const notesTexto = oc?.notes?.trim();
       const notesDisplay = notesTexto
         ? (notesTexto.length > 500 ? notesTexto.slice(0, 497) + '…' : notesTexto)
         : '<em style="color:#8A949C">Nenhuma anotação registrada.</em>';
 
       // Quantitativo
-      const quantDisplay = item.quantitativo?.trim()
-        ? `<span class="qv">${item.quantitativo.trim()}</span>`
+      const quantDisplay = oc?.quantitativo?.trim()
+        ? `<span class="qv">${oc.quantitativo.trim()}</span>`
         : `<span class="qv" style="color:#8A949C;font-style:italic">—</span>`;
 
       // Bloco de fotos (omitir grid se sem foto E item não NC)
