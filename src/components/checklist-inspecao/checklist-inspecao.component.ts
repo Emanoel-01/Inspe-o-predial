@@ -9,6 +9,18 @@ import { CameraService } from '../../services/camera.service';
 import { Type } from '@google/genai';
 import { OrcamentoService, Composicao } from '../../services/orcamento.service';
 
+export interface FichaDano {
+  severity?: 'Mínimo' | 'Regular' | 'Crítico';
+  notes: string;
+  id_evidencias?: string[];        // chaves das fotos no store 'evidencias'
+  diagnostico_ia?: string;         // texto do diagnóstico gerado pela IA
+  quantitativo?: string;           // medição/quantitativo verificado em campo pelo RT
+  memorialDescritivo?: string;      // plano de ação + memorial descritivo gerado pela IA (Seção 9)
+  correlacaoFotoPatologia?: 'CONFIRMADA' | 'DIVERGENTE' | 'INCONCLUSIVA';
+  observacaoDivergencia?: string;
+  composicoesAplicadas?: string[];  // ids de Composicao (OrcamentoService) vinculadas a este item — Seção 8
+}
+
 export interface ChecklistItem {
   id: string;
   systemTitle: string;
@@ -16,15 +28,7 @@ export interface ChecklistItem {
   title: string;
   description: string;
   status: 'PENDENTE' | 'PASS' | 'FAIL' | 'NA' | 'CONFORME' | 'NAO_CONFORME' | 'NAO_APLICAVEL';
-  severity?: 'Mínimo' | 'Regular' | 'Crítico';
-  notes: string;
-  id_evidencias?: string[];   // chaves das fotos no store 'evidencias'
-  diagnostico_ia?: string;    // texto do diagnóstico gerado pela IA
-  quantitativo?: string;      // medição/quantitativo verificado em campo pelo RT
-  memorialDescritivo?: string; // plano de ação + memorial descritivo gerado pela IA (Seção 9)
-  correlacaoFotoPatologia?: 'CONFIRMADA' | 'DIVERGENTE' | 'INCONCLUSIVA';
-  observacaoDivergencia?: string;
-  composicoesAplicadas?: string[]; // ids de Composicao (OrcamentoService) vinculadas a este item — Seção 8
+  fichaDano?: FichaDano;
 }
 
 export interface FotoGeral {
@@ -48,7 +52,6 @@ export interface Vistoria {
   codigoPatrimonial?: string;
   situacaoOperacional?: string;     // Em Uso / Desativado / Em Reforma / Crítico em Manutenção / Interditado
   tipoAmbiente?: string;            // Urbano / Rural / Industrial
-  acessibilidade?: string;          // Atende / Atende Parcialmente / Não Atende
   fotosGerais?: FotoGeral[];        // fotos situacionais da edificação (max 4, JPEG comprimidas)
   tipoUso?: string;                 // tipologia/uso da edificação (Residencial, Comercial, etc.)
   contrato?: string;                // número ou identificação do contrato
@@ -131,7 +134,7 @@ export class ChecklistInspecaoComponent implements OnInit {
     // Fecha qualquer galeria anterior (libera memória) antes de abrir a nova.
     this.fecharGaleria();
 
-    const ids = item.id_evidencias ?? [];
+    const ids = item.fichaDano?.id_evidencias ?? [];
     const carregadas: { url: string; ev: Evidencia }[] = [];
     for (const id of ids) {
       const ev = await this.dbService.getEvidencia(id);
@@ -163,7 +166,6 @@ export class ChecklistInspecaoComponent implements OnInit {
   novoCodigoPatrimonial = signal('');
   novoSituacaoOperacional = signal('');
   novoTipoAmbiente = signal('');
-  novoAcessibilidade = signal('');
   novoFotosGerais = signal<FotoGeral[]>([]);
   novoTipoUso = signal('');
   novoContrato = signal('');
@@ -306,15 +308,29 @@ export class ChecklistInspecaoComponent implements OnInit {
     try {
       await this.dbService.migrarDoLocalStorageSeNecessario();
       const lista = await this.dbService.getAllVistorias();
-      // Mapear severidades antigas para o padrão canônico NBR 16747
+      // Mapear dados antigos para a Ficha de Dano (on-the-fly) e padronizar severidades
       lista.forEach(v => {
         if (v.items) {
           v.items.forEach(item => {
-            if (item.severity) {
-              const s = String(item.severity).toUpperCase();
-              if (s === 'MÍNIMA' || s === 'MINIMA') item.severity = 'Mínimo';
-              else if (s === 'MÉDIA' || s === 'MEDIA') item.severity = 'Regular';
-              else if (s === 'GRAVE') item.severity = 'Crítico';
+            if (!item.fichaDano) {
+              const itemAny = item as any;
+              item.fichaDano = {
+                notes: itemAny.notes || '',
+                severity: itemAny.severity,
+                id_evidencias: itemAny.id_evidencias,
+                diagnostico_ia: itemAny.diagnostico_ia,
+                quantitativo: itemAny.quantitativo,
+                memorialDescritivo: itemAny.memorialDescritivo,
+                correlacaoFotoPatologia: itemAny.correlacaoFotoPatologia,
+                observacaoDivergencia: itemAny.observacaoDivergencia,
+                composicoesAplicadas: itemAny.composicoesAplicadas
+              };
+            }
+            if (item.fichaDano.severity) {
+              const s = String(item.fichaDano.severity).toUpperCase();
+              if (s === 'MÍNIMA' || s === 'MINIMA') item.fichaDano.severity = 'Mínimo';
+              else if (s === 'MÉDIA' || s === 'MEDIA') item.fichaDano.severity = 'Regular';
+              else if (s === 'GRAVE') item.fichaDano.severity = 'Crítico';
             }
           });
         }
@@ -357,7 +373,6 @@ export class ChecklistInspecaoComponent implements OnInit {
     this.novoCodigoPatrimonial.set('');
     this.novoSituacaoOperacional.set('');
     this.novoTipoAmbiente.set('');
-    this.novoAcessibilidade.set('');
     this.novoFotosGerais.set([]);
     this.novoTipoUso.set('');
     this.novoContrato.set('');
@@ -400,7 +415,6 @@ export class ChecklistInspecaoComponent implements OnInit {
     this.novoCodigoPatrimonial.set(vistoria.codigoPatrimonial ?? '');
     this.novoSituacaoOperacional.set(vistoria.situacaoOperacional ?? '');
     this.novoTipoAmbiente.set(vistoria.tipoAmbiente ?? '');
-    this.novoAcessibilidade.set(vistoria.acessibilidade ?? '');
     this.novaMapaImagemBase64.set(vistoria.mapaImagemBase64 ?? null);
     this.novoFotosGerais.set(vistoria.fotosGerais ? [...vistoria.fotosGerais] : []);
     this.novoTipoUso.set(vistoria.tipoUso ?? '');
@@ -426,7 +440,6 @@ export class ChecklistInspecaoComponent implements OnInit {
       codigoPatrimonial: this.novoCodigoPatrimonial().trim() || undefined,
       situacaoOperacional: this.novoSituacaoOperacional() || undefined,
       tipoAmbiente: this.novoTipoAmbiente() || undefined,
-      acessibilidade: this.novoAcessibilidade() || undefined,
       mapaImagemBase64: this.novaMapaImagemBase64() ?? undefined,
       fotosGerais: this.novoFotosGerais().length > 0 ? [...this.novoFotosGerais()] : undefined,
       tipoUso: this.novoTipoUso() || undefined,
@@ -515,7 +528,7 @@ export class ChecklistInspecaoComponent implements OnInit {
               title: `Inspeção Geral de Integridade`,
               description: `Realizar varredura visual em busca de deformações, anomalias de acabamento ou fissuras superficiais na tecnologia: ${t.title}.`,
               status: 'PENDENTE',
-              notes: ''
+              fichaDano: { notes: '' }
             });
 
             // 2. Criar itens específicos para cada patologia cadastrada nesta tipologia
@@ -531,7 +544,7 @@ export class ChecklistInspecaoComponent implements OnInit {
                 title: `Investigar: ${p.title}`,
                 description: `Avaliar se há ocorrência de ${p.title}. Sintomas de alerta: ${p.sintomas}. Causas prováveis na vistoria: ${p.causas}.`,
                 status: 'PENDENTE',
-                notes: ''
+                fichaDano: { notes: '' }
               });
             });
           }
@@ -554,7 +567,6 @@ export class ChecklistInspecaoComponent implements OnInit {
       codigoPatrimonial: this.novoCodigoPatrimonial().trim() || undefined,
       situacaoOperacional: this.novoSituacaoOperacional() || undefined,
       tipoAmbiente: this.novoTipoAmbiente() || undefined,
-      acessibilidade: this.novoAcessibilidade() || undefined,
       fotosGerais: this.novoFotosGerais().length > 0 ? this.novoFotosGerais() : undefined,
       tipoUso: this.novoTipoUso() || undefined,
       contrato: this.novoContrato().trim() || undefined,
@@ -633,10 +645,17 @@ export class ChecklistInspecaoComponent implements OnInit {
         const itemAtualizado = { ...item, status: novoStatus };
         // Resetar gravidade se mudou de falha (FAIL) para outra coisa
         if (novoStatus !== 'FAIL') {
-          delete itemAtualizado.severity;
-        } else if (!itemAtualizado.severity) {
-          // Valor padrão para não conforme
-          itemAtualizado.severity = 'Regular';
+          if (itemAtualizado.fichaDano) {
+            delete itemAtualizado.fichaDano.severity;
+          }
+        } else {
+          if (!itemAtualizado.fichaDano) {
+            itemAtualizado.fichaDano = { notes: '' };
+          }
+          if (!itemAtualizado.fichaDano.severity) {
+            // Valor padrão para não conforme
+            itemAtualizado.fichaDano.severity = 'Regular';
+          }
         }
         return itemAtualizado;
       }
@@ -653,7 +672,8 @@ export class ChecklistInspecaoComponent implements OnInit {
 
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId && (item.status === 'FAIL' || item.status === 'NAO_CONFORME')) {
-        return { ...item, severity: novaGravidade };
+        const f = item.fichaDano ?? { notes: '' };
+        return { ...item, fichaDano: { ...f, severity: novaGravidade } };
       }
       return item;
     });
@@ -664,12 +684,13 @@ export class ChecklistInspecaoComponent implements OnInit {
 
   toggleComposicaoItem(itemId: string, composicaoId: string): void {
     this.aplicarMudancaNoItem(itemId, it => {
-      const atuais = it.composicoesAplicadas ?? [];
+      const f = it.fichaDano ?? { notes: '' };
+      const atuais = f.composicoesAplicadas ?? [];
       const jaAplicada = atuais.includes(composicaoId);
       const novas = jaAplicada
         ? atuais.filter(id => id !== composicaoId)
         : [...atuais, composicaoId];
-      return { ...it, composicoesAplicadas: novas };
+      return { ...it, fichaDano: { ...f, composicoesAplicadas: novas } };
     });
   }
 
@@ -725,8 +746,12 @@ export class ChecklistInspecaoComponent implements OnInit {
 
       await this.dbService.saveEvidencia(ev);
 
-      const novas = [...(item.id_evidencias ?? []), idEvidencia];
-      this.aplicarMudancaNoItem(item.id, it => ({ ...it, id_evidencias: novas }));
+      const f = item.fichaDano ?? { notes: '' };
+      const novas = [...(f.id_evidencias ?? []), idEvidencia];
+      this.aplicarMudancaNoItem(item.id, it => {
+        const fIt = it.fichaDano ?? { notes: '' };
+        return { ...it, fichaDano: { ...fIt, id_evidencias: novas } };
+      });
 
       this.capturando.set(false);
       this.analisandoIa.set(true);
@@ -735,16 +760,22 @@ export class ChecklistInspecaoComponent implements OnInit {
       const diag = await this.analisarComGemini(item, base64);
 
       if (diag?.texto) {
-        this.aplicarMudancaNoItem(item.id, it => ({
-          ...it,
-          diagnostico_ia: diag.texto,
-          correlacaoFotoPatologia: diag.correlacaoFotoPatologia,
-          observacaoDivergencia: diag.observacaoDivergencia,
-        }));
+        this.aplicarMudancaNoItem(item.id, it => {
+          const fIt = it.fichaDano ?? { notes: '' };
+          return {
+            ...it,
+            fichaDano: {
+              ...fIt,
+              diagnostico_ia: diag.texto,
+              correlacaoFotoPatologia: diag.correlacaoFotoPatologia,
+              observacaoDivergencia: diag.observacaoDivergencia,
+            }
+          };
+        });
       }
 
       const itemAtualizado = this.vistoriaAtiva()?.items.find(it => it.id === item.id);
-      if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && (!itemAtualizado || !itemAtualizado.severity)) {
+      if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && (!itemAtualizado || !itemAtualizado.fichaDano?.severity)) {
         this.alterarGravidadeItem(item.id, diag.severitySugerida);
       }
     } catch (e) {
@@ -787,11 +818,12 @@ export class ChecklistInspecaoComponent implements OnInit {
 
     this.gerandoMemorialId.set(item.id);
 
-    const fotoNaoConfiavel = item.correlacaoFotoPatologia === 'DIVERGENTE' || item.correlacaoFotoPatologia === 'INCONCLUSIVA';
+    const f = item.fichaDano ?? { notes: '' };
+    const fotoNaoConfiavel = f.correlacaoFotoPatologia === 'DIVERGENTE' || f.correlacaoFotoPatologia === 'INCONCLUSIVA';
 
     const blocoDiagnosticoCampo = fotoNaoConfiavel
-      ? `AVISO: a evidência fotográfica deste item foi classificada como ${item.correlacaoFotoPatologia} em relação à patologia descrita (${item.observacaoDivergencia?.trim() || 'sem observação adicional registrada'}). IGNORE totalmente esta análise de imagem — ela não corresponde à patologia do item. Baseie o diagnóstico técnico EXCLUSIVAMENTE na anotação do Responsável Técnico abaixo.`
-      : (item.diagnostico_ia?.trim() || 'Diagnóstico não gerado para este item.');
+      ? `AVISO: a evidência fotográfica deste item foi classificada como ${f.correlacaoFotoPatologia} em relação à patologia descrita (${f.observacaoDivergencia?.trim() || 'sem observação adicional registrada'}). IGNORE totalmente esta análise de imagem — ela não corresponde à patologia do item. Baseie o diagnóstico técnico EXCLUSIVAMENTE na anotação do Responsável Técnico abaixo.`
+      : (f.diagnostico_ia?.trim() || 'Diagnóstico não gerado para este item.');
 
     const prompt = `Você é um engenheiro civil perito em manutenção e patologia predial, especialista em inspeção conforme ABNT NBR 16747 e ABNT NBR 5674.
 
@@ -804,47 +836,50 @@ Edificação: ${ativa.buildingName}
 Sistema Construtivo: ${item.systemTitle}
 Tipologia: ${item.typologyTitle}
 Item de Inspeção: ${item.title}
-Grau de Risco (NBR 16747): ${item.severity ?? 'Não classificado'}
-Quantitativo Verificado em Campo: ${item.quantitativo?.trim() || 'Não informado — use estimativa técnica proporcional'}
+Grau de Risco (NBR 16747): ${f.severity ?? 'Não classificado'}
+Quantitativo Verificado em Campo: ${f.quantitativo?.trim() || 'Não informado — use estimativa técnica proporcional'}
 
 ===== DIAGNÓSTICO TÉCNICO DE CAMPO =====
 ${blocoDiagnosticoCampo}
 
 ===== ANOTAÇÃO DO RESPONSÁVEL TÉCNICO =====
-${item.notes?.trim() || 'Sem anotação de campo.'}
+${f.notes?.trim() || 'Sem anotação de campo.'}
 
 ===== ESTRUTURA OBRIGATÓRIA DO MEMORIAL =====
 
 Redija exatamente os 6 blocos abaixo. Use Markdown: títulos com ** e listas com -.
 
 **1. DIAGNÓSTICO TÉCNICO**
-Com base nas evidências registradas em campo (fotografias, diagnóstico assistido por IA e anotações do Responsável Técnico), descreva a causa raiz confirmada e seu mecanismo de degradação. Esta é uma CONFIRMAÇÃO — não oriente investigação, a causa já está identificada.
+Descreva a causa raiz confirmada e seu mecanismo de degradação baseando-se nas evidências de campo. Esta é uma CONFIRMAÇÃO — não oriente investigação.
 
 **2. AÇÕES CORRETIVAS**
-Procedimento de reparo passo a passo. Cada bloco de procedimento deve indicar expressamente a Classe de Ação conforme ABNT NBR 5674: "Imediata", "Necessária" ou "Preventiva". Dimensione os serviços usando o quantitativo de campo informado acima.
+Procedimento de reparo passo a passo. Indicar Classe de Ação conforme NBR 5674: "Imediata", "Necessária" ou "Preventiva". Dimensione os serviços usando o quantitativo informado.
 
 **3. ESPECIFICAÇÕES TÉCNICAS — CADERNO DE ENCARGOS**
-Materiais, equipamentos, ferramentas e mão de obra especializada necessários (com normas técnicas e especificações do fabricante quando aplicável). Detalhar tolerâncias de execução, controles de qualidade e critérios de aceitação dos serviços.
+Materiais, equipamentos e normas técnicas aplicadas ao reparo. Detalhar tolerâncias de execução e critérios de aceitação.
 
 **4. MEDIDAS PREVENTIVAS**
-Ações de manutenção periódica e inspeções recomendadas para evitar reincidência após o reparo.
+Manutenção periódica recomendada para evitar reincidência.
 
 **5. SEGURANÇA NA EXECUÇÃO**
-EPIs obrigatórios, isolamento de área, condicionantes ambientais e cuidados específicos para este tipo de serviço.
+EPIs, sinalização e condicionantes ambientais específicos.
 
 **6. NORMAS TÉCNICAS RELACIONADAS**
-Liste em tabela Markdown as normas diretamente citadas nos blocos 1 a 5 deste memorial. NÃO inclua o ano da norma no código. Use EXATAMENTE este formato de tabela:
+Liste em tabela Markdown as normas diretamente citadas nos blocos 1 a 5. Não inclua o ano da norma. Formato de tabela obrigatório:
 
 | Norma | Título e Aplicação |
 |---|---|
 | ABNT NBR XXXXX | Título da norma — aplicação específica no contexto desta intervenção |
 
-Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
+Mínimo 2, máximo 8 normas.`;
 
     try {
       const resposta = await this.geminiService.generateText(prompt);
       const memorial = this.geminiService.sanitizeAiText(resposta);
-      this.aplicarMudancaNoItem(item.id, it => ({ ...it, memorialDescritivo: memorial }));
+      this.aplicarMudancaNoItem(item.id, it => {
+        const fIt = it.fichaDano ?? { notes: '' };
+        return { ...it, fichaDano: { ...fIt, memorialDescritivo: memorial } };
+      });
       this.toastService.show('Memorial descritivo gerado. Revise antes de emitir o RTIPA.', 'success');
     } catch (error) {
       console.error('Erro ao gerar memorial descritivo:', error);
@@ -1023,8 +1058,12 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
       await this.dbService.saveEvidencia(ev);
 
-      const novas = [...(item.id_evidencias ?? []), idEvidencia];
-      this.aplicarMudancaNoItem(item.id, it => ({ ...it, id_evidencias: novas }));
+      const f = item.fichaDano ?? { notes: '' };
+      const novas = [...(f.id_evidencias ?? []), idEvidencia];
+      this.aplicarMudancaNoItem(item.id, it => {
+        const fIt = it.fichaDano ?? { notes: '' };
+        return { ...it, fichaDano: { ...fIt, id_evidencias: novas } };
+      });
 
       this.capturando.set(false);
       this.analisandoIa.set(true);
@@ -1033,16 +1072,22 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       const diag = await this.analisarComGemini(item, base64);
 
       if (diag?.texto) {
-        this.aplicarMudancaNoItem(item.id, it => ({
-          ...it,
-          diagnostico_ia: diag.texto,
-          correlacaoFotoPatologia: diag.correlacaoFotoPatologia,
-          observacaoDivergencia: diag.observacaoDivergencia,
-        }));
+        this.aplicarMudancaNoItem(item.id, it => {
+          const fIt = it.fichaDano ?? { notes: '' };
+          return {
+            ...it,
+            fichaDano: {
+              ...fIt,
+              diagnostico_ia: diag.texto,
+              correlacaoFotoPatologia: diag.correlacaoFotoPatologia,
+              observacaoDivergencia: diag.observacaoDivergencia,
+            }
+          };
+        });
       }
 
       const itemAtualizado = this.vistoriaAtiva()?.items.find(it => it.id === item.id);
-      if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && (!itemAtualizado || !itemAtualizado.severity)) {
+      if (diag?.severitySugerida && diag.correlacaoFotoPatologia === 'CONFIRMADA' && (!itemAtualizado || !itemAtualizado.fichaDano?.severity)) {
         this.alterarGravidadeItem(item.id, diag.severitySugerida);
       }
     } catch (e) {
@@ -1062,7 +1107,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId) {
-        return { ...item, notes: valor };
+        const f = item.fichaDano ?? { notes: '' };
+        return { ...item, fichaDano: { ...f, notes: valor } };
       }
       return item;
     });
@@ -1078,7 +1124,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId) {
-        return { ...item, quantitativo: valor };
+        const f = item.fichaDano ?? { notes: '' };
+        return { ...item, fichaDano: { ...f, quantitativo: valor } };
       }
       return item;
     });
@@ -1162,8 +1209,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const itens = ativa.items ?? [];
 
     for (const item of itens) {
-      if (item.id_evidencias?.length) {
-        for (const evId of item.id_evidencias) {
+      if (item.fichaDano?.id_evidencias?.length) {
+        for (const evId of item.fichaDano.id_evidencias) {
           try {
             const ev = await this.dbService.getEvidencia(evId);
             if (ev?.blob) {
@@ -1209,7 +1256,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           badgeClass = 'badge-status-ok'; badgeText = 'CONFORME';
         } else if (item.status === 'FAIL' || item.status === 'NAO_CONFORME') {
           badgeClass = 'badge-status-nc';
-          badgeText = `NÃO CONFORME · ${item.severity ? item.severity.toUpperCase() : 'PENDENTE'}`;
+          badgeText = `NÃO CONFORME · ${item.fichaDano?.severity ? item.fichaDano.severity.toUpperCase() : 'PENDENTE'}`;
         } else if (item.status === 'NA' || item.status === 'NAO_APLICAVEL') {
           badgeClass = 'badge-status-na'; badgeText = 'N/A';
         }
@@ -1853,7 +1900,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     if (ativa.artRrtNumero) campos.push({ l: 'ART / RRT', v: ativa.artRrtNumero });
     if (ativa.situacaoOperacional) campos.push({ l: 'Situação Operacional', v: ativa.situacaoOperacional });
     if (ativa.tipoAmbiente) campos.push({ l: 'Tipo de Ambiente', v: ativa.tipoAmbiente });
-    if (ativa.acessibilidade) campos.push({ l: 'Acessibilidade (NBR 9050)', v: ativa.acessibilidade });
     if (ativa.lat && ativa.lng) {
       campos.push({ l: 'Coordenadas GPS', v: `${ativa.lat.toFixed(5)}, ${ativa.lng.toFixed(5)}${ativa.gpsAccuracy ? ` · ±${Math.round(ativa.gpsAccuracy)}m` : ''}` });
     }
@@ -1886,7 +1932,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
   private gerarSecao8Html(itens: ChecklistItem[]): string {
     const itensComOrcamento = itens.filter(
-      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.composicoesAplicadas?.length
+      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.fichaDano?.composicoesAplicadas?.length
     );
 
     if (itensComOrcamento.length === 0) {
@@ -1907,7 +1953,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       const idx = itens.findIndex(i => i.id === item.id);
       const seqStr = String(idx + 1).padStart(2, '0');
 
-      const composicoesCalc = (item.composicoesAplicadas ?? [])
+      const composicoesCalc = (item.fichaDano?.composicoesAplicadas ?? [])
         .map(id => this.orcamentoService.getComposicao(id))
         .filter((c): c is Composicao => !!c)
         .map(c => this.orcamentoService.calcularComposicao(c));
@@ -1965,7 +2011,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
   private gerarSecao9Html(itens: ChecklistItem[]): string {
     const itensComMemorial = itens.filter(
-      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.memorialDescritivo?.trim()
+      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.fichaDano?.memorialDescritivo?.trim()
     );
 
     if (itensComMemorial.length === 0) {
@@ -1984,16 +2030,17 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
       let sevClass = '';
       let sevLabel = '';
-      if (item.severity === 'Mínimo') { sevClass = 's9-sev-min'; sevLabel = 'Risco Mínimo'; }
-      else if (item.severity === 'Regular') { sevClass = 's9-sev-reg'; sevLabel = 'Risco Regular'; }
-      else if (item.severity === 'Crítico') { sevClass = 's9-sev-cri'; sevLabel = 'Risco Crítico'; }
+      const sev = item.fichaDano?.severity;
+      if (sev === 'Mínimo') { sevClass = 's9-sev-min'; sevLabel = 'Risco Mínimo'; }
+      else if (sev === 'Regular') { sevClass = 's9-sev-reg'; sevLabel = 'Risco Regular'; }
+      else if (sev === 'Crítico') { sevClass = 's9-sev-cri'; sevLabel = 'Risco Crítico'; }
       else { sevClass = 's9-sev-pend'; sevLabel = 'Classificação Pendente'; }
 
-      const quantDisplay = item.quantitativo?.trim()
-        ? `<div class="s9-quant"><strong>Quantitativo de campo:</strong> ${item.quantitativo.trim()}</div>`
+      const quantDisplay = item.fichaDano?.quantitativo?.trim()
+        ? `<div class="s9-quant"><strong>Quantitativo de campo:</strong> ${item.fichaDano.quantitativo.trim()}</div>`
         : '';
 
-      const memorialHtml = this.markdownParaHtmlPdf(item.memorialDescritivo ?? '');
+      const memorialHtml = this.markdownParaHtmlPdf(item.fichaDano?.memorialDescritivo ?? '');
 
       html += `
         <div class="s9-card no-break">
@@ -2111,19 +2158,21 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       const idx = itens.findIndex(i => i.id === item.id);
       const seqStr = String(idx + 1).padStart(2, '0');
 
+      const f = item.fichaDano ?? { notes: '' };
+
       // Determinar badge e classe de status
       const isNC = item.status === 'NAO_CONFORME' || item.status === 'FAIL';
       const isOK = item.status === 'CONFORME' || item.status === 'PASS';
       const isNA = item.status === 'NAO_APLICAVEL' || item.status === 'NA';
 
       let statusBadge = '';
-      if (isNC) statusBadge = `<span class="nc-status-badge nc">NÃO CONFORME · ${item.severity ? item.severity.toUpperCase() : 'PENDENTE'}</span>`;
+      if (isNC) statusBadge = `<span class="nc-status-badge nc">NÃO CONFORME · ${f.severity ? f.severity.toUpperCase() : 'PENDENTE'}</span>`;
       else if (isOK) statusBadge = `<span class="nc-status-badge ok">CONFORME</span>`;
       else if (isNA) statusBadge = `<span class="nc-status-badge na">N/A</span>`;
       else statusBadge = `<span class="nc-status-badge na">PENDENTE</span>`;
 
       // Separar evidências por tipo (até 2: contexto + detalhe)
-      const ids = item.id_evidencias ?? [];
+      const ids = f.id_evidencias ?? [];
       const evContexto = ids.map((id: string) => evidenciasMap.get(id)).find(e => e?.tipo === 'contexto');
       const evDetalhe  = ids.map((id: string) => evidenciasMap.get(id)).find(e => e?.tipo === 'detalhe');
       // fallback: se só há uma foto, coloca em contexto
@@ -2156,24 +2205,24 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
       // Diagnóstico IA — só item NÃO CONFORME, teto 600 chars
       let diagHtml = '';
-      if (isNC && item.diagnostico_ia) {
-        const diag = item.diagnostico_ia.length > 600
-          ? item.diagnostico_ia.slice(0, 597) + '…'
-          : item.diagnostico_ia;
+      if (isNC && f.diagnostico_ia) {
+        const diag = f.diagnostico_ia.length > 600
+          ? f.diagnostico_ia.slice(0, 597) + '…'
+          : f.diagnostico_ia;
 
         let correlTag = '';
         let diagClass = 'nc-diag-full';
-        if (item.correlacaoFotoPatologia === 'CONFIRMADA') {
+        if (f.correlacaoFotoPatologia === 'CONFIRMADA') {
           correlTag = `<span class="correl-tag ok">✓ Correlação confirmada</span>`;
-        } else if (item.correlacaoFotoPatologia === 'DIVERGENTE') {
+        } else if (f.correlacaoFotoPatologia === 'DIVERGENTE') {
           correlTag = `<span class="correl-tag div">⚠ Foto divergente da patologia</span>`;
           diagClass = 'nc-diag-full divergente';
-        } else if (item.correlacaoFotoPatologia === 'INCONCLUSIVA') {
+        } else if (f.correlacaoFotoPatologia === 'INCONCLUSIVA') {
           correlTag = `<span class="correl-tag inc">? Inconclusiva</span>`;
         }
 
-        const obsHtml = (item.correlacaoFotoPatologia === 'DIVERGENTE' && item.observacaoDivergencia)
-          ? `<p style="font-style:italic;margin-top:2mm;">${item.observacaoDivergencia}</p>`
+        const obsHtml = (f.correlacaoFotoPatologia === 'DIVERGENTE' && f.observacaoDivergencia)
+          ? `<p style="font-style:italic;margin-top:2mm;">${f.observacaoDivergencia}</p>`
           : '';
 
         diagHtml = `
@@ -2185,14 +2234,14 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       }
 
       // Anotação do RT — teto 500 chars
-      const notesTexto = item.notes?.trim();
+      const notesTexto = f.notes?.trim();
       const notesDisplay = notesTexto
         ? (notesTexto.length > 500 ? notesTexto.slice(0, 497) + '…' : notesTexto)
         : '<em style="color:#8A949C">Nenhuma anotação registrada.</em>';
 
       // Quantitativo
-      const quantDisplay = item.quantitativo?.trim()
-        ? `<span class="qv">${item.quantitativo.trim()}</span>`
+      const quantDisplay = f.quantitativo?.trim()
+        ? `<span class="qv">${f.quantitativo.trim()}</span>`
         : `<span class="qv" style="color:#8A949C;font-style:italic">—</span>`;
 
       // Bloco de fotos (omitir grid se sem foto E item não NC)
