@@ -1,0 +1,18 @@
+<div class="fixed top-5 right-5 z-50 space-y-3 w-full max-w-sm">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div 
+      [class]="'relative border-l-4 p-4 rounded-md shadow-lg ' + getContainerClass(toast.type)"
+      role="alert">
+      <div class="flex items-start">
+        <div class="flex-shrink-0" [innerHTML]="getIcon(toast.type)"></div>
+        <div class="ml-3">
+            <p class="text-sm font-medium">{{ toast.message }}</p>
+        </div>
+        <button (click)="toastService.remove(toast.id)" class="ml-auto -mx-1.5 -my-1.5 bg-transparent rounded-lg focus:ring-2 focus:ring-offset-2 p-1.5 inline-flex h-8 w-8" [class.hover:bg-green-200]="toast.type === 'success'" [class.hover:bg-red-200]="toast.type === 'error'" [class.hover:bg-blue-200]="toast.type === 'info'" aria-label="Dismiss">
+            <span class="sr-only">Dismiss</span>
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+    </div>
+  }
+</div>

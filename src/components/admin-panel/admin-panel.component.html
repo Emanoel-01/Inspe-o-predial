@@ -1,0 +1,600 @@
+<div class="space-y-8 animate-fade-in pb-16">
+  
+  <!-- Header Title (From Screenshot Image 11) -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xs">
+    <div>
+      <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Painel Administrativo</h2>
+      <p class="text-slate-500 text-sm mt-1">Gestão completa da Plataforma Predial 4.0 - AmorimTech</p>
+    </div>
+    <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
+      <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+      Sistema Online
+    </span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    
+    <!-- Sidebar Navigation for Admin Sections (From Screenshot Image 11) -->
+    <div class="lg:col-span-1 space-y-4">
+      <div class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">Seções</h3>
+        
+        <nav class="flex flex-col space-y-1">
+          @for (tab of tabs; track tab.id) {
+            <button 
+              (click)="activeTab.set(tab.id)"
+              [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-left transition-all duration-200 ' + 
+                       (activeTab() === tab.id ? 'bg-sky-600 text-white shadow-md shadow-sky-600/10' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')">
+              <span class="text-lg shrink-0">{{ tab.icon }}</span>
+              <span class="truncate">{{ tab.label }}</span>
+            </button>
+          }
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content Area on the Right (Depends on selected Section) -->
+    <div class="lg:col-span-3">
+      <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm min-h-[500px]">
+        
+        <!-- SECTION 1: ANÁLISE DE ATIVIDADE -->
+        @if (activeTab() === 'atividade') {
+          <div class="space-y-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 class="text-lg sm:text-xl font-bold text-slate-800">Análise de Atividade dos Usuários</h3>
+                <p class="text-slate-500 text-xs sm:text-sm mt-0.5">Indicadores de engajamento do copiloto de engenharia</p>
+              </div>
+              <button 
+                (click)="refreshStats()" 
+                [disabled]="isRefreshing()"
+                class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs sm:text-sm transition cursor-pointer">
+                <svg [class.animate-spin]="isRefreshing()" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                <span>{{ isRefreshing() ? 'Atualizando...' : 'Atualizar Dados' }}</span>
+              </button>
+            </div>
+
+            <!-- Stats Cards (From Screenshot Image 10) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-2">
+                <p class="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total de Atividades</p>
+                <div class="flex items-baseline gap-2">
+                  <span class="text-3xl font-black text-slate-800">{{ totalActivities() }}</span>
+                  <span class="text-slate-500 text-[10px]">Nos últimos registros</span>
+                </div>
+              </div>
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-2">
+                <p class="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Usuários Ativos</p>
+                <div class="flex items-baseline gap-2">
+                  <span class="text-3xl font-black text-slate-800">{{ activeUsers() }}</span>
+                  <span class="text-slate-500 text-[10px]">Usuários únicos</span>
+                </div>
+              </div>
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-2">
+                <p class="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Ação Mais Comum</p>
+                <div class="flex items-baseline gap-2">
+                  <span class="text-xl sm:text-2xl font-bold text-sky-700">ai_diagnosis</span>
+                  <span class="text-slate-500 text-[10px]">(416 ocorrências)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Charts and Progress Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              <!-- Left Chart Box: Atividade por Dia (From Screenshot Image 9) -->
+              <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Atividade por Dia (Últimos 7 dias)</h4>
+                
+                <div class="relative pt-4">
+                  <!-- Custom Interactive SVG Bar Chart -->
+                  <svg viewBox="0 0 400 200" class="w-full h-48 overflow-visible">
+                    <!-- Grid Lines -->
+                    <line x1="40" y1="20" x2="380" y2="20" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3" />
+                    <line x1="40" y1="55" x2="380" y2="55" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3" />
+                    <line x1="40" y1="90" x2="380" y2="90" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3" />
+                    <line x1="40" y1="125" x2="380" y2="125" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3,3" />
+                    <line x1="40" y1="160" x2="380" y2="160" stroke="#f1f5f9" stroke-width="1" />
+
+                    <!-- Y-Axis Labels -->
+                    <text x="15" y="24" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">28</text>
+                    <text x="15" y="59" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">21</text>
+                    <text x="15" y="94" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">14</text>
+                    <text x="15" y="129" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">7</text>
+                    <text x="15" y="164" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="middle">0</text>
+
+                    <!-- Bars (X coords: 70, 115, 160, 205, 250, 295, 340) -->
+                    <!-- Bar 1: 21/06 (Value: 12, height: 60) -->
+                    <rect x="65" y="100" width="20" height="60" rx="3" fill="#38bdf8" class="transition-all duration-500 hover:fill-sky-600 cursor-pointer">
+                      <title>21/06: 12 ações</title>
+                    </rect>
+                    <!-- Bar 2: 22/06 (Value: 8, height: 40) -->
+                    <rect x="110" y="120" width="20" height="40" rx="3" fill="#38bdf8" class="transition-all duration-500 hover:fill-sky-600 cursor-pointer">
+                      <title>22/06: 8 ações</title>
+                    </rect>
+                    <!-- Bar 3: 23/06 (Value: 18, height: 90) -->
+                    <rect x="155" y="70" width="20" height="90" rx="3" fill="#38bdf8" class="transition-all duration-500 hover:fill-sky-600 cursor-pointer">
+                      <title>23/06: 18 ações</title>
+                    </rect>
+                    <!-- Bar 4: 24/06 (Value: 26, height: 130) -->
+                    <rect x="200" y="30" width="20" height="130" rx="3" fill="#0284c7" class="transition-all duration-500 hover:fill-sky-800 cursor-pointer">
+                      <title>24/06 (Pico): 26 ações</title>
+                    </rect>
+                    <!-- Bar 5: 25/06 (Value: 15, height: 75) -->
+                    <rect x="245" y="85" width="20" height="75" rx="3" fill="#38bdf8" class="transition-all duration-500 hover:fill-sky-600 cursor-pointer">
+                      <title>25/06: 15 ações</title>
+                    </rect>
+                    <!-- Bar 6: 26/06 (Value: 21, height: 105) -->
+                    <rect x="290" y="55" width="20" height="105" rx="3" fill="#38bdf8" class="transition-all duration-500 hover:fill-sky-600 cursor-pointer">
+                      <title>26/06: 21 ações</title>
+                    </rect>
+                    <!-- Bar 7: 27/06 (Value: 25, height: 125) -->
+                    <rect x="335" y="35" width="20" height="125" rx="3" fill="#0284c7" class="transition-all duration-500 hover:fill-sky-800 cursor-pointer">
+                      <title>27/06 (Hoje): 25 ações</title>
+                    </rect>
+
+                    <!-- X-Axis Labels -->
+                    <text x="75" y="182" fill="#64748b" font-size="9" font-family="sans-serif" text-anchor="middle">21/06</text>
+                    <text x="120" y="182" fill="#64748b" font-size="9" font-family="sans-serif" text-anchor="middle">22/06</text>
+                    <text x="165" y="182" fill="#64748b" font-size="9" font-family="sans-serif" text-anchor="middle">23/06</text>
+                    <text x="210" y="182" fill="#64748b" font-size="9" font-family="sans-serif" text-anchor="middle">24/06</text>
+                    <text x="255" y="182" fill="#64748b" font-size="9" font-family="sans-serif" text-anchor="middle">25/06</text>
+                    <text x="300" y="182" fill="#64748b" font-size="9" font-family="sans-serif" text-anchor="middle">26/06</text>
+                    <text x="345" y="182" fill="#64748b" font-size="9" font-family="sans-serif" text-anchor="middle">27/06</text>
+                  </svg>
+                  <p class="text-[10px] text-slate-400 text-center mt-2 font-medium">💡 Passe o cursor sobre as colunas para ver detalhes.</p>
+                </div>
+              </div>
+
+              <!-- Right Chart Box: Dispositivos Utilizados (From Screenshot Image 7, 8) -->
+              <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dispositivos Utilizados</h4>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-6 justify-center">
+                  <!-- SVG Donut Chart -->
+                  <svg width="140" height="140" viewBox="0 0 100 100" class="shrink-0">
+                    <!-- Concentric Circles representing Mobile, Desktop, Tablet proportion -->
+                    <!-- Background Grey Track -->
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f1f5f9" stroke-width="8" />
+                    
+                    <!-- Segment 1: Mobile (435/997 = ~43.6%) -->
+                    <!-- Stroke length = 43.6% * 2 * PI * r = 0.436 * 251.2 = ~109.5 -->
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#0284c7" stroke-width="8" 
+                            stroke-dasharray="109.5 251.2" stroke-dashoffset="0" transform="rotate(-90 50 50)" />
+                    
+                    <!-- Segment 2: Desktop (309/997 = ~31%) -->
+                    <!-- Stroke length = 31% * 2 * PI * r = ~77.8. Offset = 109.5 -->
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="8" 
+                            stroke-dasharray="77.8 251.2" stroke-dashoffset="-109.5" transform="rotate(-90 50 50)" />
+
+                    <!-- Segment 3: Tablet (256/997 = ~25.4%) -->
+                    <!-- Stroke length = 25.4% * 2 * PI * r = ~63.8. Offset = 187.3 -->
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f59e0b" stroke-width="8" 
+                            stroke-dasharray="63.8 251.2" stroke-dashoffset="-187.3" transform="rotate(-90 50 50)" />
+
+                    <!-- Center text -->
+                    <text x="50" y="55" font-family="sans-serif" font-size="11" font-weight="bold" fill="#334155" text-anchor="middle">997</text>
+                    <text x="50" y="65" font-family="sans-serif" font-size="6" fill="#94a3b8" text-anchor="middle">Acessos</text>
+                  </svg>
+
+                  <!-- Labels list -->
+                  <div class="space-y-2 text-xs w-full sm:w-auto">
+                    <div class="flex items-center gap-2">
+                      <span class="w-3 h-3 bg-sky-600 rounded-full shrink-0"></span>
+                      <span class="font-bold text-slate-700">Celulares:</span>
+                      <span class="text-slate-500 font-medium">435 (43.6%)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-3 h-3 bg-emerald-500 rounded-full shrink-0"></span>
+                      <span class="font-bold text-slate-700">Computadores:</span>
+                      <span class="text-slate-500 font-medium">309 (31.0%)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="w-3 h-3 bg-amber-500 rounded-full shrink-0"></span>
+                      <span class="font-bold text-slate-700">Tablets:</span>
+                      <span class="text-slate-500 font-medium">256 (25.4%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Ações Mais Realizadas Horizontal Bars (From Screenshot Image 7, 8) -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ações Mais Realizadas</h4>
+              
+              <div class="space-y-4 pt-1">
+                <!-- Action 1 -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between text-xs font-bold">
+                    <span class="text-slate-700">🔍 Diagnóstico de Patologia por IA (<code>ai_diagnosis</code>)</span>
+                    <span class="text-sky-700">416 ocorrências (41.6%)</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                    <div class="bg-sky-600 h-full rounded-full" style="width: 41.6%"></div>
+                  </div>
+                </div>
+
+                <!-- Action 2 -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between text-xs font-bold">
+                    <span class="text-slate-700">👤 Autenticação no Ecossistema (<code>login</code>)</span>
+                    <span class="text-emerald-700">318 ocorrências (31.8%)</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                    <div class="bg-emerald-500 h-full rounded-full" style="width: 31.8%"></div>
+                  </div>
+                </div>
+
+                <!-- Action 3 -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between text-xs font-bold">
+                    <span class="text-slate-700">📄 Navegação de Páginas Técnicas (<code>page_view</code>)</span>
+                    <span class="text-amber-700">107 ocorrências (10.7%)</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                    <div class="bg-amber-500 h-full rounded-full" style="width: 10.7%"></div>
+                  </div>
+                </div>
+
+                <!-- Action 4 -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between text-xs font-bold">
+                    <span class="text-slate-700">💼 Edição de Perfil de Vistoria (<code>ai_profile</code>)</span>
+                    <span class="text-indigo-700">47 ocorrências (4.7%)</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                    <div class="bg-indigo-500 h-full rounded-full" style="width: 4.7%"></div>
+                  </div>
+                </div>
+
+                <!-- Action 5 -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between text-xs font-bold">
+                    <span class="text-slate-700">🛠️ Diagnóstico Técnico Estrutural (<code>ai_tech</code>)</span>
+                    <span class="text-violet-700">35 ocorrências (3.5%)</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                    <div class="bg-violet-500 h-full rounded-full" style="width: 3.5%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        }
+
+        <!-- SECTION 2: ANÁLISE DE LEADS -->
+        @if (activeTab() === 'leads') {
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 class="text-lg sm:text-xl font-bold text-slate-800">Análise de Leads do Ecossistema</h3>
+                <p class="text-slate-500 text-xs sm:text-sm mt-0.5">Profissionais interessados em materiais e licenciamento</p>
+              </div>
+              <button 
+                (click)="showAddLeadForm.set(!showAddLeadForm())" 
+                class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm transition flex items-center gap-1.5 cursor-pointer">
+                <span>{{ showAddLeadForm() ? 'Ocultar Formulário' : '+ Novo Lead' }}</span>
+              </button>
+            </div>
+
+            <!-- Add Lead Form -->
+            @if (showAddLeadForm()) {
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4 animate-slide-down">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Registrar Lead Manualmente</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Nome Completo</label>
+                    <input #leadName type="text" placeholder="Ex: Roberto Carlos" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-hidden focus:border-sky-500">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">E-mail</label>
+                    <input #leadEmail type="email" placeholder="nome@exemplo.com" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-hidden focus:border-sky-500">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Plano de Interesse</label>
+                    <select #leadPlan class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-hidden focus:border-sky-500">
+                      <option value="Inspetor Autônomo">Inspetor Autônomo</option>
+                      <option value="Professional FM">Professional FM</option>
+                      <option value="Enterprise FM">Enterprise FM</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="flex justify-end gap-3">
+                  <button (click)="showAddLeadForm.set(false)" class="px-4 py-2 bg-stone-200 text-slate-700 hover:bg-stone-300 rounded-xl text-xs font-bold transition cursor-pointer">Cancelar</button>
+                  <button (click)="addManualLead(leadName.value, leadEmail.value, leadPlan.value); leadName.value=''; leadEmail.value=''" class="px-5 py-2 bg-sky-600 text-white hover:bg-sky-700 rounded-xl text-xs font-bold transition cursor-pointer">Adicionar</button>
+                </div>
+              </div>
+            }
+
+            <!-- Leads Table -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-100">
+              <table class="w-full border-collapse text-left text-xs sm:text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 text-[10px]">
+                    <th class="p-4">ID</th>
+                    <th class="p-4">Nome</th>
+                    <th class="p-4">E-mail</th>
+                    <th class="p-4">Plano</th>
+                    <th class="p-4">Data de Registro</th>
+                    <th class="p-4 text-center">Status</th>
+                    <th class="p-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (lead of leads(); track lead.id) {
+                    <tr class="hover:bg-slate-50/50">
+                      <td class="p-4 font-bold text-slate-400">{{ lead.id }}</td>
+                      <td class="p-4 font-bold text-slate-800">{{ lead.name }}</td>
+                      <td class="p-4 text-slate-600">{{ lead.email }}</td>
+                      <td class="p-4 font-medium text-slate-600">{{ lead.plan }}</td>
+                      <td class="p-4 text-slate-500">{{ lead.date }}</td>
+                      <td class="p-4 text-center">
+                        <span 
+                          [class]="'inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ' + 
+                                   (lead.status === 'Ativo' ? 'bg-emerald-50 text-emerald-700' : '') +
+                                   (lead.status === 'Pendente' ? 'bg-amber-50 text-amber-700' : '') +
+                                   (lead.status === 'Sob Consulta' ? 'bg-indigo-50 text-indigo-700' : '') +
+                                   (lead.status === 'Cancelado' ? 'bg-rose-50 text-rose-700' : '')">
+                          {{ lead.status }}
+                        </span>
+                      </td>
+                      <td class="p-4 text-right space-x-1">
+                        <button (click)="toggleLeadStatus(lead.id, lead.status)" class="text-sky-600 hover:text-sky-800 font-bold p-1 transition cursor-pointer" title="Alterar Status">🔄</button>
+                        <button (click)="deleteLead(lead.id)" class="text-rose-600 hover:text-rose-800 font-bold p-1 transition cursor-pointer" title="Remover">🗑️</button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="7" class="p-8 text-center text-slate-400 font-medium">Nenhum lead registrado no sistema.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        }
+
+        <!-- SECTION 3: GESTÃO DE USUÁRIOS -->
+        @if (activeTab() === 'usuarios') {
+          <div class="space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h3 class="text-lg sm:text-xl font-bold text-slate-800">Gestão de Usuários e Engenheiros</h3>
+                <p class="text-slate-500 text-xs sm:text-sm mt-0.5">Gerencie os acessos ao copiloto técnico</p>
+              </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-100">
+              <table class="w-full border-collapse text-left text-xs sm:text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 text-[10px]">
+                    <th class="p-4">Iniciais</th>
+                    <th class="p-4">Nome</th>
+                    <th class="p-4">Cargo / Título</th>
+                    <th class="p-4">Empresa</th>
+                    <th class="p-4">Nível de Acesso</th>
+                    <th class="p-4 text-center">Status</th>
+                    <th class="p-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (user of users(); track user.id) {
+                    <tr class="hover:bg-slate-50/50">
+                      <td class="p-4">
+                        <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
+                          {{ user.initials }}
+                        </div>
+                      </td>
+                      <td class="p-4 font-bold text-slate-800">{{ user.name }}</td>
+                      <td class="p-4 text-slate-600">{{ user.title }}</td>
+                      <td class="p-4 font-medium text-slate-600">{{ user.company }}</td>
+                      <td class="p-4">
+                        <span class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-slate-200">
+                          {{ user.role }}
+                        </span>
+                      </td>
+                      <td class="p-4 text-center">
+                        <span 
+                          [class]="'inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ' + 
+                                   (user.active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500')">
+                          {{ user.active ? 'Ativo' : 'Inativo' }}
+                        </span>
+                      </td>
+                      <td class="p-4 text-right space-x-2">
+                        <button (click)="toggleUserActive(user.id)" class="text-xs font-bold text-sky-600 hover:text-sky-800 transition cursor-pointer">
+                          {{ user.active ? 'Bloquear' : 'Ativar' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        }
+
+        <!-- SECTION 4: CENTRAL DE NOTIFICAÇÕES (From Screenshot Image 13) -->
+        @if (activeTab() === 'notificacoes') {
+          <div class="space-y-6">
+            <div class="border-b border-slate-100 pb-4">
+              <h3 class="text-lg sm:text-xl font-bold text-slate-800">Central de Notificações</h3>
+              <p class="text-slate-500 text-xs sm:text-sm mt-0.5">Envie alertas em tempo real e gerencie avisos corporativos</p>
+            </div>
+
+            <!-- Create Notification Form -->
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Criar e Disparar Notificação</h4>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Título do Alerta</label>
+                  <input #notifTitle type="text" placeholder="Ex: Manutenção Concluída" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-hidden focus:border-sky-500">
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Mensagem Principal</label>
+                  <input #notifMsg type="text" placeholder="Ex: O Bloco A foi liberado após impermeabilização." class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-hidden focus:border-sky-500">
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-3">
+                <button (click)="clearNotifications()" class="px-4 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-bold transition cursor-pointer">Limpar Todos</button>
+                <button 
+                  (click)="sendNotification(notifTitle.value, notifMsg.value); notifTitle.value=''; notifMsg.value=''" 
+                  class="px-5 py-2.5 bg-sky-600 text-white hover:bg-sky-700 rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                  <span>🚀 Disparar Notificação</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Alerts (Matching visual of Screenshot Image 13) -->
+            <div class="space-y-3">
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Histórico de Alertas Disparados</h4>
+              
+              <div class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                @for (item of notifications(); track item.id) {
+                  <div class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:bg-slate-50/50 transition">
+                    <div class="flex items-start gap-3">
+                      <!-- Blue Dot (as in Screenshot Image 13) -->
+                      <span [class]="'w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 ' + (item.read ? 'bg-slate-300' : 'bg-sky-500 animate-pulse')"></span>
+                      <div>
+                        <h5 class="text-xs font-black text-slate-800">{{ item.title }}</h5>
+                        <p class="text-xs text-slate-600 mt-0.5 leading-normal">{{ item.message }}</p>
+                        <span class="text-[9px] text-slate-400 font-medium block mt-1">{{ item.date }}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      @if (!item.read) {
+                        <button (click)="markAsRead(item.id)" class="text-[10px] text-sky-600 font-bold hover:underline cursor-pointer">Marcar como Lida</button>
+                      }
+                      <button (click)="deleteNotification(item.id)" class="text-slate-400 hover:text-rose-500 text-xs p-1 transition cursor-pointer">🗑️</button>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="text-center py-8 text-slate-400 font-medium">Nenhuma notificação ativa na central.</div>
+                }
+              </div>
+            </div>
+
+          </div>
+        }
+
+        <!-- SECTION 5: CONVITES E ACESSOS -->
+        @if (activeTab() === 'convites') {
+          <div class="space-y-6">
+            <div class="border-b border-slate-100 pb-4">
+              <h3 class="text-lg sm:text-xl font-bold text-slate-800">Convites e Acessos Corporativos</h3>
+              <p class="text-slate-500 text-xs sm:text-sm mt-0.5">Emita códigos de convite seguros para novos engenheiros e estagiários</p>
+            </div>
+
+            <!-- Generator Block -->
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4 text-center sm:text-left">
+              <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Novo Token de Acesso de Campo</h4>
+                  <p class="text-slate-500 text-xs mt-0.5">Gera um código alfa-numérico válido por 72 horas para vistoriadores convidados.</p>
+                </div>
+                <button (click)="generateInviteCode()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition cursor-pointer">
+                  🔑 Gerar Novo Convite
+                </button>
+              </div>
+
+              <!-- Generated Codes list -->
+              @if (inviteCodes().length > 0) {
+                <div class="pt-4 border-t border-slate-200 space-y-2">
+                  <h5 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Códigos Ativos Atualmente</h5>
+                  <div class="space-y-1.5">
+                    @for (code of inviteCodes(); track code.id) {
+                      <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-100 text-xs">
+                        <div class="flex items-center gap-2">
+                          <code class="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">{{ code.code }}</code>
+                          <span class="text-[10px] text-slate-400">Criado em: {{ code.created }}</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Ativo (72h)</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+          </div>
+        }
+
+        <!-- SECTION 6: CONFIGURAÇÕES -->
+        @if (activeTab() === 'configuracoes') {
+          <div class="space-y-8">
+            <div class="border-b border-slate-100 pb-4">
+              <h3 class="text-lg sm:text-xl font-bold text-slate-800">Configurações Gerais do Sistema</h3>
+              <p class="text-slate-500 text-xs sm:text-sm mt-0.5">Ajuste parâmetros operacionais globais</p>
+            </div>
+
+            <!-- Sync State Config -->
+            <div class="space-y-4">
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Modo de Sincronização</h4>
+              
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-xs sm:text-sm font-bold text-slate-700">Simular Sincronização Local (Offline)</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400">Guarda dados de checklist exclusivamente no navegador do usuário</p>
+                  </div>
+                  <button 
+                    (click)="toggleSimulateOffline()"
+                    class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-hidden"
+                    [class.bg-sky-600]="simulateOffline()"
+                    [class.bg-slate-200]="!simulateOffline()">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200"
+                          [class.translate-x-5]="simulateOffline()"
+                          [class.translate-x-0]="!simulateOffline()"></span>
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-slate-200 pt-4">
+                  <div>
+                    <p class="text-xs sm:text-sm font-bold text-slate-700">Sincronização Nuvem 4.0</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400">Ativa comunicação futura segura com servidores em nuvem AmorimTech Cloud</p>
+                  </div>
+                  <button 
+                    (click)="toggleAdvancedSync()"
+                    class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-hidden"
+                    [class.bg-sky-600]="advancedSyncMode()"
+                    [class.bg-slate-200]="!advancedSyncMode()">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200"
+                          [class.translate-x-5]="advancedSyncMode()"
+                          [class.translate-x-0]="!advancedSyncMode()"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Danger Zone Actions -->
+            <div class="space-y-4 pt-4 border-t border-slate-100">
+              <h4 class="text-xs font-bold text-rose-500 uppercase tracking-wider">Ações Críticas</h4>
+              
+              <div class="bg-rose-50/50 p-5 rounded-2xl border border-rose-100 space-y-3">
+                <p class="text-xs sm:text-sm text-rose-800 leading-normal">
+                  A remoção de progresso limpará todas as tarefas concluídas, anomalias marcadas e fotos registradas localmente do Checklist de Campo. Esta ação é definitiva e não pode ser desfeita.
+                </p>
+                <button 
+                  (click)="resetLocalChecklist()"
+                  class="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-5 rounded-xl text-xs sm:text-sm uppercase tracking-wider transition-colors duration-200 cursor-pointer">
+                  ⚠️ Limpar Progresso do Checklist
+                </button>
+              </div>
+            </div>
+
+          </div>
+        }
+
+      </div>
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,329 @@
+<!-- LOGIN VIEW -->
+@if (showLogin()) {
+  <app-login (loginSuccess)="handleLoginSuccess()" (loginAsGuest)="handleGuestAccess()" />
+} @else {
+  <!-- MAIN APP VIEW -->
+  <div class="font-sans text-slate-800 antialiased bg-slate-50 min-h-screen">
+    <!-- SIDEBAR -->
+    <aside 
+      class="fixed top-0 left-0 h-full w-64 bg-slate-900 text-white p-4 z-30 sidebar lg:translate-x-0 border-r border-white/5 flex flex-col justify-between"
+      [class.translate-x-0]="isMenuOpen()"
+      [class.-translate-x-full]="!isMenuOpen()">
+      
+      <!-- Top Group -->
+      <div class="space-y-6">
+        <div class="text-center py-4 border-b border-white/5">
+          <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400 tracking-tight">Predial 4.0</h1>
+          <p class="text-[10px] uppercase font-bold text-sky-300 tracking-widest mt-1">Plano Interativo</p>
+        </div>
+        
+        <nav class="flex flex-col space-y-1.5">
+          @for (item of navItems; track item.id) {
+            <button 
+              (click)="setActiveView(item.id)" 
+              [disabled]="!isLoggedIn() && item.id !== 'visao-geral'"
+              [class]="'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ' + 
+                       (activeView() === item.id ? 'bg-sky-600 text-white shadow-md shadow-sky-600/10' : 'text-slate-300 hover:bg-white/5 hover:text-white') + 
+                       (!isLoggedIn() && item.id !== 'visao-geral' ? ' opacity-40 cursor-not-allowed' : '')">
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 shrink-0"><path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon" /></svg>
+              <span>{{ item.label }}</span>
+            </button>
+          }
+        </nav>
+      </div>
+
+      <!-- Bottom Actions Group (As shown in screenshot Image 11) -->
+      <div class="pt-6 border-t border-white/5 space-y-1.5 mb-2">
+        <!-- Fazer Tour -->
+        <button 
+          (click)="startTour()"
+          [disabled]="!isLoggedIn()"
+          [class]="'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all duration-200 ' + 
+                   (!isLoggedIn() ? 'opacity-40 cursor-not-allowed' : '')">
+          <!-- Icone Bússola/Localização -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+          <span>Fazer Tour</span>
+        </button>
+
+        <!-- Sair -->
+        <button 
+          (click)="handleLogout()"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-rose-400 hover:bg-rose-500/10 transition-all duration-200 cursor-pointer">
+          <!-- Icone Log Out -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- OVERLAY FOR MOBILE MENU -->
+    @if(isMenuOpen()) {
+      <div class="fixed inset-0 bg-black/50 z-20 lg:hidden" (click)="isMenuOpen.set(false)"></div>
+    }
+
+    <!-- MAIN CONTENT -->
+    <div class="lg:pl-64">
+      <!-- STICKY HEADER FOR MOBILE -->
+      <header class="sticky top-0 bg-slate-100/80 backdrop-blur-sm p-4 z-10 flex items-center justify-between lg:hidden border-b border-slate-200">
+        <button (click)="isMenuOpen.set(true)" class="text-slate-600">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+        </button>
+        <div>
+           <h1 class="text-lg font-bold text-sky-900">{{ activeViewLabel() }}</h1>
+        </div>
+        @if (isLoggedIn()) {
+          <button (click)="openProfile()" class="flex items-center justify-center w-8 h-8 rounded-full bg-sky-200 text-sky-800 font-bold">
+            {{ userName() ? userName()?.charAt(0) : 'P' }}
+          </button>
+        } @else {
+          <button (click)="handleLogout()" class="text-slate-600">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
+          </button>
+        }
+      </header>
+
+      <div class="p-4 md:p-6 lg:p-8">
+        <!-- DESKTOP HEADER -->
+        <header class="hidden lg:flex justify-between items-center mb-8">
+            <div>
+              <h1 class="text-3xl font-bold text-slate-900">{{ activeViewLabel() }}</h1>
+              <p class="text-slate-500 mt-1">Plano Interativo de Manutenção Predial 4.0</p>
+            </div>
+            <div class="flex items-center gap-4">
+              @if (isLoggedIn()) {
+                @if (userName()) {
+                  <span class="text-slate-700 font-medium">Olá, {{ userName() }}!</span>
+                }
+
+                <!-- NOTIFICATION BELL DROPDOWN -->
+                <div class="relative">
+                  <button 
+                    (click)="isNotificationDropdownOpen.set(!isNotificationDropdownOpen())"
+                    class="relative p-2 text-slate-500 hover:text-slate-800 bg-white border border-slate-200 rounded-lg transition-colors duration-200 cursor-pointer flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                    </svg>
+                    <!-- Red Badge -->
+                    @if (notificationService.unreadCount() > 0) {
+                      <span class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white font-extrabold text-[10px] rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                        {{ notificationService.unreadCount() }}
+                      </span>
+                    }
+                  </button>
+
+                  <!-- Notifications Popover Card -->
+                  @if (isNotificationDropdownOpen()) {
+                    <div class="absolute right-0 mt-2.5 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                      <div class="p-3.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Alertas ({{ notificationService.unreadCount() }})</h4>
+                        <button (click)="notificationService.markAllAsRead(); isNotificationDropdownOpen.set(false)" class="text-[10px] text-sky-600 hover:underline font-bold cursor-pointer">Marcar Lidas</button>
+                      </div>
+                      <div class="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                        @for (item of notificationService.notifications().slice(0, 4); track item.id) {
+                          <div class="p-3 text-xs hover:bg-slate-50 transition cursor-pointer flex items-start gap-2" (click)="notificationService.markAsRead(item.id)">
+                            <span [class]="'w-2 h-2 mt-1.5 rounded-full shrink-0 ' + (item.read ? 'bg-slate-300' : 'bg-sky-500')"></span>
+                            <div class="space-y-0.5">
+                              <p class="font-bold text-slate-800">{{ item.title }}</p>
+                              <p class="text-slate-500 leading-normal line-clamp-2">{{ item.message }}</p>
+                              <span class="text-[8px] text-slate-400 block mt-0.5">{{ item.date }}</span>
+                            </div>
+                          </div>
+                        } @empty {
+                          <div class="p-6 text-center text-slate-400 text-xs">Nenhum aviso no histórico.</div>
+                        }
+                      </div>
+                      <div class="p-2 bg-slate-50 text-center border-t border-slate-100">
+                        <button (click)="setActiveView('admin'); isNotificationDropdownOpen.set(false)" class="w-full text-[10px] text-slate-600 hover:text-sky-600 font-bold tracking-wider uppercase cursor-pointer">Ver Todas as Notificações</button>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <button (click)="openProfile()" class="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2.73l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2.73l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <span>Perfil</span>
+                </button>
+              } @else {
+                <button (click)="handleLogout()" class="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50 transition-colors">
+                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
+                  <span>Login</span>
+                </button>
+              }
+            </div>
+        </header>
+
+        <!-- MAIN VIEW CONTENT -->
+        <main>
+          @switch (activeView()) {
+            @case ('visao-geral') { <app-visao-geral /> }
+            @case ('estrutura') { <app-system-category categoryKey="estrutura" [userProfile]="userProfile()" /> }
+            @case ('instalacoes') { <app-system-category categoryKey="instalacoes" [userProfile]="userProfile()" /> }
+            @case ('seguranca') { <app-system-category categoryKey="seguranca" [userProfile]="userProfile()" /> }
+            @case ('externas') { <app-system-category categoryKey="externas" [userProfile]="userProfile()" /> }
+            @case ('checklist') { <app-checklist-inspecao /> }
+            @case ('ocorrencias') { <app-ocorrencia /> }
+            @case ('reforma') { <app-reforma /> }
+            @case ('admin') { <app-admin-panel /> }
+            @default { <app-visao-geral /> }
+          }
+        </main>
+      </div>
+    </div>
+
+    <!-- FLOATING ASSISTANT BUTTONS -->
+    <div class="fixed bottom-6 right-6 z-20 flex flex-col items-end gap-4">
+      <button (click)="openAssistant(isDiagnosisModalOpen)" class="assist-button bg-amber-500 text-white rounded-full p-4 shadow-lg hover:bg-amber-600" title="Diagnóstico por Imagem">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 0 0 9 22a4 4 0 0 0 5-4.815a4 4 0 0 0 .556-6.588 4 4 0 0 0-2.526-5.77A3 3 0 0 0 12 5Z"/><path d="M12 5a3 3 0 1 0 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 0 1 15 22a4 4 0 0 1-5-4.815a4 4 0 0 1-.556-6.588 4 4 0 0 1 2.526-5.77A3 3 0 0 1 12 5Z"/><path d="M12 9a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0Z"/><path d="M12 13a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0Z"/><path d="m15.5 6.5 1-1"/><path d="m18.5 9.5 1-1"/><path d="m18.5 14.5 1 1"/><path d="m15.5 17.5 1 1"/><path d="m8.5 6.5-1-1"/><path d="m5.5 9.5-1-1"/><path d="m5.5 14.5-1 1"/><path d="m8.5 17.5-1 1"/></svg>
+      </button>
+      <button (click)="openAssistant(isInspectionModalOpen)" class="assist-button bg-sky-700 text-white rounded-full p-4 shadow-lg hover:bg-sky-800" title="Assistente de Inspeção">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+      </button>
+       <button (click)="openAssistant(isTechDiagnosisModalOpen)" class="assist-button bg-teal-600 text-white rounded-full p-4 shadow-lg hover:bg-teal-700" title="Diagnóstico Técnico">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4"/><path d="M19 17v4"/><path d="M12 3v4"/><path d="M5 17v4"/><path d="M19 3v4"/><path d="M12 17v4"/><path d="m12 15-2-3 2-3 2 3-2 3Z"/><path d="M19 15-2-3 2-3 2 3-2 3Z"/><path d="M5 15-2-3 2-3 2 3-2 3Z"/><path d="m12 8 2-3-2-3-2 3 2 3Z"/><path d="M19 8l2-3-2-3-2 3 2 3Z"/><path d="M5 8l2-3-2-3-2 3 2 3Z"/></svg>
+      </button>
+      <button (click)="openAssistant(isMaintenanceScheduleModalOpen)" class="assist-button bg-indigo-600 text-white rounded-full p-4 shadow-lg hover:bg-indigo-700" title="Cronograma de Manutenção">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+      </button>
+    </div>
+  </div>
+}
+
+<!-- MODALS -->
+<app-image-diagnosis-modal [isOpen]="isDiagnosisModalOpen()" (closeModal)="isDiagnosisModalOpen.set(false)" />
+<app-inspection-assistant-modal [isOpen]="isInspectionModalOpen()" [userProfile]="userProfile()" (closeModal)="isInspectionModalOpen.set(false)" />
+<app-tech-diagnosis-modal [isOpen]="isTechDiagnosisModalOpen()" [userProfile]="userProfile()" (closeModal)="isTechDiagnosisModalOpen.set(false)" />
+<app-maintenance-schedule-modal [isOpen]="isMaintenanceScheduleModalOpen()" [userProfile]="userProfile()" (closeModal)="isMaintenanceScheduleModalOpen.set(false)" />
+<app-user-profile-modal [isOpen]="isProfileModalOpen()" [profileData]="userProfile()" (closeModal)="isProfileModalOpen.set(false)" (profileUpdate)="onProfileUpdate($event)" (logout)="handleLogout()" />
+<app-toast />
+
+<!-- TOUR GUIDADO INTEGRADO -->
+@if (isTourActive()) {
+  <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in">
+    <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-sky-100 flex flex-col justify-between">
+      
+      <!-- Top banner -->
+      <div class="bg-gradient-to-r from-slate-900 to-sky-950 text-white p-6 relative">
+        <span class="bg-sky-500 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max">Tour do Ecossistema</span>
+        <h4 class="text-xl font-black mt-2">
+          @if (tourStep() === 1) { 🚀 Passo 1 de 4: Visão Geral }
+          @else if (tourStep() === 2) { 🏗️ Passo 2 de 4: Sistemas de Campo }
+          @else if (tourStep() === 3) { 📋 Passo 3 de 4: Vistoria RTIPA }
+          @else if (tourStep() === 4) { 🤖 Passo 4 de 4: Assistentes com IA }
+        </h4>
+        <button (click)="isTourActive.set(false)" class="absolute top-6 right-6 text-slate-300 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="p-6 space-y-4">
+        @if (tourStep() === 1) {
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Bem-vindo ao <strong>Predial 4.0</strong>! Esta é a página inicial da AmorimTech. Aqui você tem uma visão geral, pode assinar planos de teste, baixar eBooks de engenharia diagnóstica e visualizar o gráfico comparativo de estratégias de manutenção.
+          </p>
+        } @else if (tourStep() === 2) {
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Explore os sistemas do edifício na barra lateral: <strong>Estrutura &amp; Envoltória</strong>, <strong>Instalações</strong>, <strong>Segurança &amp; Transporte</strong> e <strong>Áreas Externas</strong>. Cada módulo traz tipologias técnicas e catálogo completo de patologias comuns.
+          </p>
+        } @else if (tourStep() === 3) {
+          <p class="text-slate-600 text-sm leading-relaxed">
+            Abra a <strong>Vistoria RTIPA</strong> para iniciar uma inspeção predial no edifício em tempo real. Registre conformidades, fotografias com GPS e anotações técnicas — salvas localmente para uso sem internet.
+          </p>
+        } @else if (tourStep() === 4) {
+          <p class="text-slate-600 text-sm leading-relaxed">
+            No canto inferior direito, você tem acesso às nossas <strong>Ferramentas de IA Ativas</strong>: Diagnóstico de patologias por fotos de campo (IA), Assistente de vistorias por chat, Diagnóstico Técnico guiado e o Cronograma Preventivo anual!
+          </p>
+        }
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <button 
+          (click)="prevTourStep()" 
+          [disabled]="tourStep() === 1"
+          class="px-4 py-2 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 text-slate-700 font-bold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors duration-200">
+          Anterior
+        </button>
+        <button 
+          (click)="nextTourStep()" 
+          class="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors duration-200 shadow-md">
+          {{ tourStep() === 4 ? 'Concluir' : 'Próximo' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- MODAL ADMIN / PREFERÊNCIAS DO SISTEMA -->
+@if (isAdminModalOpen()) {
+  <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in">
+    <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200">
+      
+      <div class="bg-gradient-to-r from-slate-900 to-slate-950 text-white p-6 relative">
+        <h4 class="text-lg font-bold">Ferramentas de Desenvolvedor &amp; Admin</h4>
+        <p class="text-slate-300 text-xs mt-1">Configure parâmetros do ecossistema e limpe estados locais.</p>
+        <button (click)="isAdminModalOpen.set(false)" class="absolute top-6 right-6 text-slate-300 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        
+        <!-- Estado de Sincronização -->
+        <div class="space-y-2">
+          <h5 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Modo de Operação</h5>
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-slate-700">Simular Sincronização Local</p>
+                <p class="text-[10px] text-slate-400">Guarda dados exclusivamente no navegador</p>
+              </div>
+              <button 
+                (click)="simulateOffline.set(!simulateOffline())"
+                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-hidden"
+                [class.bg-sky-600]="simulateOffline()"
+                [class.bg-slate-200]="!simulateOffline()">
+                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200"
+                      [class.translate-x-5]="simulateOffline()"
+                      [class.translate-x-0]="!simulateOffline()"></span>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-slate-700">Sincronização Nuvem 4.0</p>
+                <p class="text-[10px] text-slate-400">Permite sincronização futura com AmorimTech Cloud</p>
+              </div>
+              <button 
+                (click)="advancedSyncMode.set(!advancedSyncMode())"
+                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-hidden"
+                [class.bg-sky-600]="advancedSyncMode()"
+                [class.bg-slate-200]="!advancedSyncMode()">
+                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200"
+                      [class.translate-x-5]="advancedSyncMode()"
+                      [class.translate-x-0]="!advancedSyncMode()"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ação Destrutiva -->
+        <div class="space-y-2">
+          <h5 class="text-xs font-bold text-rose-500 uppercase tracking-wider">Ações Críticas</h5>
+          <div class="bg-rose-50/50 p-4 rounded-2xl border border-rose-100 space-y-2">
+            <p class="text-xs text-rose-800 leading-normal">
+              Esta ação removerá todas as vistorias RTIPA, registros de conformidade e evidências salvas localmente neste dispositivo.
+            </p>
+            <button 
+              (click)="resetLocalState()"
+              class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-colors duration-200 cursor-pointer">
+              Limpar Vistorias Locais
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+}

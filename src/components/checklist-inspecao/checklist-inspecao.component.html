@@ -1,0 +1,1241 @@
+<div class="space-y-6">
+
+  <!-- MODO 1: LISTA DE VISTORIAS SALVAS -->
+  @if (modoExibicao() === 'LISTA') {
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-100">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-sky-900">Suas Vistorias de Campo</h2>
+          <p class="text-slate-500 text-sm">Gerencie e retome vistorias interativas salvas localmente no seu dispositivo</p>
+        </div>
+        <button (click)="abrirCriacao()" class="flex items-center gap-2 bg-sky-700 hover:bg-sky-800 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition-all shadow-sm active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Nova Vistoria</span>
+        </button>
+      </div>
+
+      @if (carregandoVistorias()) {
+        <div class="text-center py-16 px-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center space-y-3">
+          <div class="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-slate-600 text-sm font-medium">Carregando vistorias de campo do banco de dados local...</p>
+        </div>
+      } @else if (vistorias().length === 0) {
+        <div class="text-center py-12 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-50 text-sky-700 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800 mb-1">Nenhuma Vistoria Iniciada</h3>
+          <p class="text-slate-500 max-w-md mx-auto text-sm mb-6">Inicie uma nova lista interativa de inspeção de campo para marcar conformidades e acompanhar o progresso no local durante a vistoria do edifício.</p>
+          <button (click)="abrirCriacao()" class="bg-sky-700 hover:bg-sky-800 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-sm">
+            Criar Minha Primeira Vistoria
+          </button>
+        </div>
+      } @else {
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (vistoria of vistorias(); track vistoria.id) {
+            <div (click)="abrirVistoria(vistoria)" class="group cursor-pointer bg-white rounded-xl border border-slate-200 p-5 hover:border-sky-500 hover:shadow-md transition-all flex flex-col justify-between relative">
+              <div>
+                <div class="flex justify-between items-start gap-2 mb-3">
+                  <h3 class="font-bold text-slate-800 group-hover:text-sky-700 transition-colors line-clamp-1 text-base">{{ vistoria.buildingName }}</h3>
+                  <div class="flex items-center gap-1 flex-shrink-0 relative z-10">
+                    <button type="button"
+                            (click)="editarVistoria($event, vistoria)"
+                            class="text-slate-400 hover:text-sky-600 p-1 rounded-md hover:bg-sky-50 transition-colors"
+                            title="Editar Dados do Imóvel">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button type="button"
+                            (click)="excluirVistoria($event, vistoria.id)"
+                            class="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors"
+                            title="Excluir Vistoria">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                  </div>
+                </div>
+                <p class="text-slate-500 text-xs flex items-center gap-1.5 mb-4">
+                  <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <span class="truncate">{{ vistoria.address }}</span>
+                </p>
+              </div>
+
+              <div class="space-y-3 mt-4">
+                <div class="flex justify-between text-xs font-semibold text-slate-600">
+                  <span>Progresso</span>
+                  <span [class]="vistoria.progress === 100 ? 'text-green-600 font-bold' : 'text-sky-700'">{{ vistoria.progress }}%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500" 
+                       [class.bg-green-500]="vistoria.progress === 100"
+                       [class.bg-sky-600]="vistoria.progress < 100"
+                       [style.width.%]="vistoria.progress"></div>
+                </div>
+                <div class="flex justify-between items-center text-[10px] text-slate-400 pt-2 border-t border-slate-50">
+                  <span>Itens: {{ vistoria.items.length }}</span>
+                  <span>Atualizado: {{ vistoria.dateUpdated | date:'dd/MM HH:mm' }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- MODO 4: EDITAR DADOS DO IMÓVEL (EDICAO) -->
+  @if (modoExibicao() === 'EDICAO' && vistoriaEmEdicao()) {
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-100 space-y-6">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-sky-900">Editar Dados do Imóvel</h2>
+          <p class="text-slate-500 text-sm">Atualize as informações cadastrais e gerais da edificação ativa</p>
+        </div>
+        <button (click)="cancelarEdicao()" class="text-slate-500 hover:text-slate-800 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6 p-5 border border-slate-200 rounded-xl bg-slate-50/50">
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Nome do Edifício</label>
+          <input [value]="vistoriaEmEdicao()?.buildingName" disabled
+                 class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 shadow-none cursor-not-allowed">
+          <p class="text-[10px] text-slate-400">O nome do edifício não pode ser editado após a criação para manter a consistência histórica do banco de dados local.</p>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Endereço do Imóvel</label>
+          <input [value]="vistoriaEmEdicao()?.address" disabled
+                 class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500 shadow-none cursor-not-allowed">
+          <p class="text-[10px] text-slate-400">O endereço não pode ser editado após a criação para manter a consistência histórica do banco de dados local.</p>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Tipo de Uso / Tipologia</label>
+          <select [value]="novoTipoUso()"
+                  (change)="novoTipoUso.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione…</option>
+            <option>Residencial Unifamiliar</option>
+            <option>Residencial Multifamiliar / Condomínio</option>
+            <option>Comercial</option>
+            <option>Institucional / Público</option>
+            <option>Educacional</option>
+            <option>Hospitalar / Saúde</option>
+            <option>Industrial</option>
+            <option>Misto (Residencial + Comercial)</option>
+            <option>Patrimônio Histórico / Cultural</option>
+            <option>Religioso</option>
+            <option>Hotelaria / Hospedagem</option>
+            <option>Esportivo / Lazer</option>
+            <option>Logística / Armazenamento</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Código Patrimonial</label>
+          <input [value]="novoCodigoPatrimonial()" 
+                 (input)="novoCodigoPatrimonial.set($any($event.target).value)" 
+                 placeholder="Ex: PAT-2026-88" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Número da ART / RRT</label>
+          <input [value]="novoArtRrt()" 
+                 (input)="novoArtRrt.set($any($event.target).value)" 
+                 placeholder="Ex: 2026RE000123456" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Área Construída</label>
+          <input [value]="novaAreaConstruida()" 
+                 (input)="novaAreaConstruida.set($any($event.target).value)" 
+                 placeholder="Ex: 1.200 m²" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Idade da Edificação</label>
+          <input [value]="novaIdadeEdificacao()" 
+                 (input)="novaIdadeEdificacao.set($any($event.target).value)" 
+                 placeholder="Ex: 18 anos (construída em 2006)" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Situação Operacional</label>
+          <select [value]="novoSituacaoOperacional()"
+                  (change)="novoSituacaoOperacional.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione...</option>
+            <option value="Em Uso">Em Uso</option>
+            <option value="Desativado">Desativado</option>
+            <option value="Em Reforma">Em Reforma</option>
+            <option value="Crítico em Manutenção">Crítico em Manutenção</option>
+            <option value="Interditado">Interditado</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Tipo de Ambiente</label>
+          <select [value]="novoTipoAmbiente()"
+                  (change)="novoTipoAmbiente.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione...</option>
+            <option value="Urbano">Urbano</option>
+            <option value="Rural">Rural</option>
+            <option value="Industrial">Industrial</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2 space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Acessibilidade (NBR 9050)</label>
+          <select [value]="novoAcessibilidade()"
+                  (change)="novoAcessibilidade.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione...</option>
+            <option value="Atende">Atende</option>
+            <option value="Atende Parcialmente">Atende Parcialmente</option>
+            <option value="Não Atende">Não Atende</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2 space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Memorial Descritivo da Edificação</label>
+          <textarea [value]="novoMemoriaDescritivo()"
+                    (input)="novoMemoriaDescritivo.set($any($event.target).value)"
+                    rows="3"
+                    placeholder="Ex: Edificação residencial multifamiliar composta por duas torres de 15 pavimentos..."
+                    class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"></textarea>
+        </div>
+        <div class="sm:col-span-2 space-y-2">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Imagem do Mapa de Localização</label>
+          <p class="text-xs text-slate-400 -mt-1">Substitua ou anexe o mapa de localização. Formatos aceitos: PNG, JPG.</p>
+          <input type="file" accept="image/png,image/jpeg,image/jpg"
+                 (change)="onMapaImagemChange($event)"
+                 class="block w-full text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer border border-slate-300 rounded-lg bg-white px-2 py-1.5">
+          @if (novaMapaImagemBase64()) {
+            <div class="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="font-semibold">Imagem do mapa carregada com sucesso.</span>
+            </div>
+          }
+        </div>
+        <div class="sm:col-span-2 space-y-2">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Fotos Gerais Situacionais da Edificação (máx. 4)</label>
+          <input type="file" accept="image/png,image/jpeg,image/jpg" multiple
+                 (change)="onFotoGeralChange($event)"
+                 class="block w-full text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer border border-slate-300 rounded-lg bg-white px-2 py-1.5">
+          @if (novoFotosGerais().length > 0) {
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+              @for (foto of novoFotosGerais(); track $index) {
+                <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-white group aspect-video shadow-xs">
+                  <img [src]="foto.dataUrl" class="w-full h-full object-cover">
+                  <button type="button" (click)="removerFotoGeral($index)" 
+                          class="absolute top-1.5 right-1.5 bg-red-600/90 hover:bg-red-700 text-white p-1 rounded-full transition-all shadow-sm active:scale-90 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                  <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] px-1.5 py-0.5 truncate">
+                    {{ foto.timestamp | date:'HH:mm:ss' }}
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="sm:col-span-2">
+          <div class="text-xs font-bold uppercase text-slate-500 tracking-wider py-2 border-t border-slate-200 mt-1 mb-3">
+            Dados Contratuais — B2G
+          </div>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Número do Contrato</label>
+          <input [value]="novoContrato()" (input)="novoContrato.set($any($event.target).value)" placeholder="Ex: CT-2024-001" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">N° da Ordem de Serviço</label>
+          <input [value]="novoNumeroOs()" (input)="novoNumeroOs.set($any($event.target).value)" placeholder="Ex: OS-2024-0123" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Data da OS</label>
+          <input [value]="novoDataOs()" (input)="novoDataOs.set($any($event.target).value)" placeholder="Ex: 01/06/2026" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Contratante — Razão Social</label>
+          <input [value]="novoContratanteRazaoSocial()" (input)="novoContratanteRazaoSocial.set($any($event.target).value)" placeholder="Ex: Prefeitura do Recife" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">CNPJ do Contratante</label>
+          <input [value]="novoContratanteCnpj()" (input)="novoContratanteCnpj.set($any($event.target).value)" placeholder="Ex: 11.222.333/0001-44" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Nome do Fiscal do Contrato</label>
+          <input [value]="novoNomeFiscal()" (input)="novoNomeFiscal.set($any($event.target).value)" placeholder="Ex: João da Silva" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">N° de Matrícula do Fiscal</label>
+          <input [value]="novoMatriculaFiscal()" (input)="novoMatriculaFiscal.set($any($event.target).value)" placeholder="Ex: 12345-6" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+      </div>
+
+      <div class="flex gap-4 pt-4 border-t border-slate-100">
+        <button (click)="cancelarEdicao()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-sm transition-colors active:scale-95">
+          Cancelar
+        </button>
+        <button (click)="salvarEdicaoVistoria()" class="flex-1 bg-sky-700 hover:bg-sky-800 text-white font-bold py-3 rounded-xl text-sm transition-colors shadow-md active:scale-95">
+          Salvar Alterações
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- MODO 2: CONFIGURAR E CRIAR NOVA VISTORIA -->
+  @if (modoExibicao() === 'CRIACAO') {
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-100 space-y-6">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-sky-900">Iniciar Nova Vistoria</h2>
+          <p class="text-slate-500 text-sm">Defina os dados do imóvel e escolha as tecnologias e tipologias para vistoriar</p>
+        </div>
+        <button (click)="cancelarCriacao()" class="text-slate-500 hover:text-slate-800 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <!-- Form basico -->
+      <div class="grid sm:grid-cols-2 gap-6 p-5 border border-slate-200 rounded-xl bg-slate-50/50">
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Nome do Edifício *</label>
+          <input [value]="novoBuildingName()" 
+                 (input)="novoBuildingName.set($any($event.target).value)" 
+                 placeholder="Ex: Condomínio Residencial Vista Alegre" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Endereço do Imóvel *</label>
+          <input [value]="novoAddress()" 
+                 (input)="novoAddress.set($any($event.target).value)" 
+                 placeholder="Ex: Rua das Palmeiras, 450 - Bairro Novo" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Área Construída
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional)</span>
+          </label>
+          <input [value]="novaAreaConstruida()" 
+                 (input)="novaAreaConstruida.set($any($event.target).value)" 
+                 placeholder="Ex: 1.200 m²" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Idade da Edificação
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional)</span>
+          </label>
+          <input [value]="novaIdadeEdificacao()" 
+                 (input)="novaIdadeEdificacao.set($any($event.target).value)" 
+                 placeholder="Ex: 18 anos (construída em 2006)" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Tipo de Uso / Tipologia da Edificação
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional)</span>
+          </label>
+          <select [value]="novoTipoUso()"
+                  (change)="novoTipoUso.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione…</option>
+            <option>Residencial Unifamiliar</option>
+            <option>Residencial Multifamiliar / Condomínio</option>
+            <option>Comercial</option>
+            <option>Institucional / Público</option>
+            <option>Educacional</option>
+            <option>Hospitalar / Saúde</option>
+            <option>Industrial</option>
+            <option>Misto (Residencial + Comercial)</option>
+            <option>Patrimônio Histórico / Cultural</option>
+            <option>Religioso</option>
+            <option>Hotelaria / Hospedagem</option>
+            <option>Esportivo / Lazer</option>
+            <option>Logística / Armazenamento</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Código Patrimonial
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional)</span>
+          </label>
+          <input [value]="novoCodigoPatrimonial()"
+                 (input)="novoCodigoPatrimonial.set($any($event.target).value)"
+                 placeholder="Ex: PREF-REC-2024-001"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Situação Operacional
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional)</span>
+          </label>
+          <select [value]="novoSituacaoOperacional()"
+                  (change)="novoSituacaoOperacional.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione…</option>
+            <option>Em Uso</option>
+            <option>Desativado</option>
+            <option>Em Reforma</option>
+            <option>Crítico em Manutenção</option>
+            <option>Interditado</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Tipo de Ambiente
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional)</span>
+          </label>
+          <select [value]="novoTipoAmbiente()"
+                  (change)="novoTipoAmbiente.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione…</option>
+            <option>Urbano</option>
+            <option>Rural</option>
+            <option>Industrial</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Acessibilidade (NBR 9050)
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional)</span>
+          </label>
+          <select [value]="novoAcessibilidade()"
+                  (change)="novoAcessibilidade.set($any($event.target).value)"
+                  class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+            <option value="">Selecione…</option>
+            <option>Atende</option>
+            <option>Atende Parcialmente</option>
+            <option>Não Atende</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Número da ART / RRT
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — aparece na Seção 1 do RTIPA)</span>
+          </label>
+          <input [value]="novoArtRrt()" 
+                 (input)="novoArtRrt.set($any($event.target).value)" 
+                 placeholder="Ex: 2026RE000123456" 
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="sm:col-span-2 space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Memorial Descritivo da Edificação
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — use o Gerador Seção 4 externo para gerar — aparece na Seção 4 do RTIPA)</span>
+          </label>
+          <textarea [value]="novoMemoriaDescritivo()"
+                    (input)="novoMemoriaDescritivo.set($any($event.target).value)"
+                    rows="4"
+                    placeholder="Cole aqui o Memorial Descritivo gerado pelo Gerador Seção 4 externo. Descreve o imóvel: tipo de uso, sistema construtivo, estado de conservação aparente, localização e acessos..."
+                    class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"></textarea>
+        </div>
+        <div class="sm:col-span-2 space-y-2">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Fotos Gerais da Edificação
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — fachada, entorno, cobertura — máx. 4 fotos — Seção 4)</span>
+          </label>
+          <p class="text-xs text-slate-400 -mt-1">Serão comprimidas automaticamente. Aparecem como Relatório Fotográfico Situacional na Seção 4.</p>
+          <input type="file" accept="image/*" multiple
+                 (change)="onFotoGeralChange($event)"
+                 class="block w-full text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer border border-slate-300 rounded-lg bg-white px-2 py-1.5">
+          @if (novoFotosGerais().length > 0) {
+            <div class="grid grid-cols-4 gap-2 mt-2">
+              @for (foto of novoFotosGerais(); track foto.timestamp; let i = $index) {
+                <div class="relative rounded-lg overflow-hidden border border-slate-200 aspect-video bg-slate-50">
+                  <img [src]="foto.dataUrl" alt="Foto geral" class="w-full h-full object-cover">
+                  <button type="button" (click)="removerFotoGeral(i)"
+                          class="absolute top-1 right-1 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover:bg-rose-700 cursor-pointer">
+                    ×
+                  </button>
+                </div>
+              }
+            </div>
+            <p class="text-xs text-emerald-700 font-semibold">{{ novoFotosGerais().length }}/4 foto(s) carregada(s).</p>
+          }
+        </div>
+        <div class="sm:col-span-2 space-y-2">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
+            Imagem do Mapa de Localização
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — Seção 4 do RTIPA)</span>
+          </label>
+          <input type="file" accept="image/png,image/jpeg,image/jpg"
+                 (change)="onMapaImagemChange($event)"
+                 class="block w-full text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer border border-slate-300 rounded-lg bg-white px-2 py-1.5">
+          @if (novaMapaImagemBase64()) {
+            <div class="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="font-semibold">Imagem do mapa carregada com sucesso.</span>
+            </div>
+          }
+        </div>
+        <!-- Campos de contrato B2G (opcional) -->
+        <div class="sm:col-span-2">
+          <div class="text-xs font-bold uppercase text-slate-500 tracking-wider py-2 border-t border-slate-200 mt-1 mb-3">
+            Dados Contratuais — B2G
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — Lei 14.133/2021)</span>
+          </div>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Número do Contrato</label>
+          <input [value]="novoContrato()"
+                 (input)="novoContrato.set($any($event.target).value)"
+                 placeholder="Ex: CT-2024-001"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">N° da Ordem de Serviço</label>
+          <input [value]="novoNumeroOs()"
+                 (input)="novoNumeroOs.set($any($event.target).value)"
+                 placeholder="Ex: OS-2024-0123"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Data da OS</label>
+          <input [value]="novoDataOs()"
+                 (input)="novoDataOs.set($any($event.target).value)"
+                 placeholder="Ex: 01/06/2026"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Contratante — Razão Social</label>
+          <input [value]="novoContratanteRazaoSocial()"
+                 (input)="novoContratanteRazaoSocial.set($any($event.target).value)"
+                 placeholder="Ex: Prefeitura do Recife"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">CNPJ do Contratante</label>
+          <input [value]="novoContratanteCnpj()"
+                 (input)="novoContratanteCnpj.set($any($event.target).value)"
+                 placeholder="Ex: 11.222.333/0001-44"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Nome do Fiscal do Contrato</label>
+          <input [value]="novoNomeFiscal()"
+                 (input)="novoNomeFiscal.set($any($event.target).value)"
+                 placeholder="Ex: João da Silva"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">N° de Matrícula do Fiscal</label>
+          <input [value]="novoMatriculaFiscal()"
+                 (input)="novoMatriculaFiscal.set($any($event.target).value)"
+                 placeholder="Ex: 12345-6"
+                 class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        </div>
+      </div>
+
+      <!-- Escolha das tipologias de sistemas -->
+      <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h3 class="font-bold text-slate-800 text-base">Selecione os Sistemas & Tipologias que Serão Inspecionados *</h3>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button (click)="selecionarTodosSistemas()" class="flex-1 sm:flex-initial text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg border border-slate-200 transition-colors">
+              Selecionar Tudo
+            </button>
+            <button (click)="limparSelecaoSistemas()" class="flex-1 sm:flex-initial text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg border border-slate-200 transition-colors">
+              Limpar Seleção
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-6 max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin">
+          @for (categoria of sistemasDisponiveis(); track categoria.key) {
+            <div class="border border-slate-200 rounded-xl overflow-hidden bg-white">
+              <header class="bg-slate-100 p-3 border-b border-slate-200 font-bold text-sm text-sky-900 flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-sky-700 rounded-full"></span>
+                {{ categoria.title }}
+              </header>
+              <div class="p-4 grid sm:grid-cols-2 gap-4">
+                @for (subSys of categoria.subSystems; track subSys.key) {
+                  <div class="bg-slate-50/50 p-3.5 rounded-lg border border-slate-150 flex flex-col justify-between">
+                    <div>
+                      <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                        <span>{{ subSys.icon }}</span>
+                        <span>{{ subSys.title }}</span>
+                      </h4>
+                      <div class="space-y-2">
+                        @for (tipo of subSys.typologies; track tipo.title) {
+                          <label class="flex items-start gap-2.5 cursor-pointer p-1.5 rounded hover:bg-white hover:shadow-xs transition-all border border-transparent hover:border-slate-100">
+                            <input type="checkbox"
+                                   [checked]="selecaoSistemas()[subSys.key + '-' + tipo.title]"
+                                   (change)="toggleTypologySelecao(subSys.key, tipo.title)"
+                                   class="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-700 focus:ring-sky-500 cursor-pointer">
+                            <div class="text-xs">
+                              <p class="font-semibold text-slate-800">{{ tipo.title }}</p>
+                              <p class="text-slate-400 text-[10px] mt-0.5">{{ tipo.patologiasCount }} patologias cadastradas para inspeção</p>
+                            </div>
+                          </label>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Botoes de Acao -->
+      <div class="flex gap-4 pt-4 border-t border-slate-100">
+        <button (click)="cancelarCriacao()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-sm transition-colors active:scale-95">
+          Cancelar
+        </button>
+        <div class="flex-1 flex flex-col gap-2">
+          <button (click)="criarVistoria()" class="w-full bg-sky-700 hover:bg-sky-800 text-white font-bold py-3 rounded-xl text-sm transition-colors shadow-md active:scale-95">
+            Gerar Prancheta e Iniciar Vistoria
+          </button>
+          @if (novoLat()) {
+            <p class="text-xs text-green-700 text-center">
+              📍 GPS capturado: {{ novoLat()?.toFixed(5) }}, {{ novoLng()?.toFixed(5) }}
+              @if (novoGpsAccuracy()) { · ±{{ novoGpsAccuracy()! | number:'1.0-0' }} m }
+            </p>
+          } @else {
+            <p class="text-xs text-slate-400 text-center">GPS aguardando sinal… (capturado automaticamente em campo)</p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODO 3: PRANCHETA DE EXECUÇÃO DA VISTORIA -->
+  @if (modoExibicao() === 'EXECUCAO' && vistoriaAtiva()) {
+    <div class="space-y-6">
+      
+      <!-- Cabeçalho Fixo de Execução -->
+      <div class="bg-white rounded-xl shadow-lg p-5 border border-slate-200 sticky top-0 z-10 space-y-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
+                Inspeção Ativa de Campo
+              </span>
+              <span class="text-xs text-slate-400 font-mono">ID: {{ vistoriaAtiva()?.id }}</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">{{ vistoriaAtiva()?.buildingName }}</h2>
+            <p class="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span>{{ vistoriaAtiva()?.address }}</span>
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-2 w-full md:w-auto">
+            <button (click)="voltarParaLista()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-slate-200 active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+              <span>Pausar</span>
+            </button>
+            <button (click)="exportarRelatorioPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-sm active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+              <span>Gerar Relatório</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de Progresso com Métricas -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-slate-100">
+          <div class="col-span-2 space-y-1.5">
+            <div class="flex justify-between text-xs font-bold text-slate-700">
+              <span>Progresso da Vistoria</span>
+              <span class="text-sky-700">{{ estatisticasAtivas().percentualConclusao }}% Concluído</span>
+            </div>
+            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-300"
+                   [class.bg-green-500]="estatisticasAtivas().percentualConclusao === 100"
+                   [class.bg-sky-600]="estatisticasAtivas().percentualConclusao < 100"
+                   [style.width.%]="estatisticasAtivas().percentualConclusao"></div>
+            </div>
+            <p class="text-[10px] text-slate-400 font-medium">Inspecionados: {{ estatisticasAtivas().avaliados }} de {{ estatisticasAtivas().total }} itens totais de inspeção.</p>
+          </div>
+
+          <div class="bg-emerald-50 rounded-lg p-2 border border-emerald-100 text-center flex flex-col justify-center">
+            <span class="text-emerald-800 font-extrabold text-lg">{{ estatisticasAtivas().conformes }}</span>
+            <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Aprovados (Pass)</span>
+          </div>
+
+          <div class="bg-rose-50 rounded-lg p-2 border border-rose-100 text-center flex flex-col justify-center">
+            <span class="text-rose-800 font-extrabold text-lg">{{ estatisticasAtivas().naoConformes }}</span>
+            <span class="text-[10px] text-rose-700 font-bold uppercase tracking-wider">Falhas (Fail)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros e Execução de Itens -->
+      <div class="grid lg:grid-cols-4 gap-6">
+        
+        <!-- Painel Lateral de Filtros (Sistemas) -->
+        <div class="lg:col-span-1 bg-white rounded-xl shadow-md border border-slate-200 p-4 space-y-4 h-fit">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">Filtrar por Sistema</h3>
+          <div class="space-y-1">
+            <button (click)="filtroSistema.set('TODOS')" 
+                    [class]="'w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors flex justify-between items-center ' + 
+                             (filtroSistema() === 'TODOS' ? 'bg-sky-100 text-sky-800' : 'text-slate-600 hover:bg-slate-50')">
+              <span>Todos os Sistemas</span>
+              <span class="bg-slate-200 text-slate-700 font-mono text-[10px] px-2 py-0.5 rounded-full">{{ vistoriaAtiva()?.items?.length }}</span>
+            </button>
+            @for (sistema of sistemasNoChecklistAtivo(); track sistema) {
+              <button (click)="filtroSistema.set(sistema)" 
+                      [class]="'w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors flex justify-between items-center ' + 
+                               (filtroSistema() === sistema ? 'bg-sky-100 text-sky-800' : 'text-slate-600 hover:bg-slate-50')">
+                <span class="truncate">{{ sistema }}</span>
+              </button>
+            }
+          </div>
+
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-500 border-b border-slate-100 pt-2 pb-2">Status da Inspeção</h3>
+          <div class="space-y-1">
+            <button (click)="filtroStatus.set('TODOS')" 
+                    [class]="'w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors ' + 
+                             (filtroStatus() === 'TODOS' ? 'bg-slate-200 text-slate-800' : 'text-slate-600 hover:bg-slate-50')">
+              Todos os Itens
+            </button>
+            <button (click)="filtroStatus.set('PENDENTE')" 
+                    [class]="'w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors flex justify-between items-center ' + 
+                             (filtroStatus() === 'PENDENTE' ? 'bg-amber-100 text-amber-800' : 'text-slate-600 hover:bg-slate-50')">
+              <span>⏳ Pendentes</span>
+              @if (estatisticasAtivas().pendentes > 0) {
+                <span class="bg-amber-200 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ estatisticasAtivas().pendentes }}</span>
+              }
+            </button>
+            <button (click)="filtroStatus.set('PASS')" 
+                    [class]="'w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors ' + 
+                             (filtroStatus() === 'PASS' ? 'bg-emerald-100 text-emerald-800' : 'text-slate-600 hover:bg-slate-50')">
+              ✅ Aprovados (Pass)
+            </button>
+            <button (click)="filtroStatus.set('FAIL')" 
+                    [class]="'w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors flex justify-between items-center ' + 
+                             (filtroStatus() === 'FAIL' ? 'bg-rose-100 text-rose-800' : 'text-slate-600 hover:bg-slate-50')">
+              <span>❌ Falhas (Fail)</span>
+              @if (estatisticasAtivas().naoConformes > 0) {
+                <span class="bg-rose-200 text-rose-900 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ estatisticasAtivas().naoConformes }}</span>
+              }
+            </button>
+            <button (click)="filtroStatus.set('NA')" 
+                    [class]="'w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors ' + 
+                             (filtroStatus() === 'NA' ? 'bg-slate-100 text-slate-700' : 'text-slate-600 hover:bg-slate-50')">
+              🚫 Não Aplicáveis (N/A)
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Itens do Checklist -->
+        <div class="lg:col-span-3 space-y-4">
+          <div class="flex justify-between items-center mb-1">
+            <h3 class="font-bold text-slate-800 text-sm">
+              Itens Encontrados: <span class="text-sky-700 font-extrabold">{{ itemsExibidos().length }}</span>
+            </h3>
+            <span class="text-slate-400 text-xs">Exibindo filtros ativos</span>
+          </div>
+
+          @if (itemsExibidos().length === 0) {
+            <div class="text-center py-12 px-4 bg-white rounded-xl border border-slate-200">
+              <svg class="mx-auto h-12 w-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <h4 class="text-slate-700 font-bold text-base mb-1">Nenhum item corresponde aos filtros</h4>
+              <p class="text-slate-400 text-xs">Tente limpar ou mudar a combinação de filtros de sistema e status de campo.</p>
+              <button (click)="filtroStatus.set('TODOS'); filtroSistema.set('TODOS')" class="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border">
+                Limpar Filtros
+              </button>
+            </div>
+          } @else {
+            <!-- Card de orientação de campo ao RT -->
+            <div class="bg-sky-50 border border-sky-200 rounded-xl p-4">
+              <div class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <div class="space-y-1.5 text-xs text-slate-700 leading-relaxed">
+                  <p class="font-bold text-sky-900 text-[13px]">Orientação de campo</p>
+                  <p><strong class="font-semibold text-slate-800">Registre anotações em todos os itens</strong> — inclusive nos Conformes e N/A. Na análise de escritório, a IA reúne todas as anotações e evidências para montar o plano de ação, o memorial descritivo e o orçamento. <em>Um item sem anotação é informação perdida.</em></p>
+                  <p><strong class="font-semibold text-slate-800">A IA sugere o grau de criticidade</strong> ao analisar a foto — é um ponto de partida que você pode ajustar a qualquer momento.</p>
+                </div>
+              </div>
+            </div>
+
+            @for (item of itemsExibidos(); track item.id) {
+              <div class="bg-white rounded-xl border p-5 shadow-sm transition-all duration-200 border-l-4"
+                   [class.border-l-sky-500]="item.status === 'PENDENTE'"
+                   [class.border-l-green-500]="item.status === 'CONFORME' || item.status === 'PASS'"
+                   [class.border-l-rose-500]="item.status === 'NAO_CONFORME' || item.status === 'FAIL'"
+                   [class.border-l-slate-400]="item.status === 'NAO_APLICAVEL' || item.status === 'NA'"
+                   [class.bg-slate-50/20]="item.status !== 'PENDENTE'">
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-2.5">
+                  <div>
+                    <span class="text-[10px] font-mono font-bold tracking-wider text-slate-400 uppercase">
+                       {{ item.systemTitle }} &bull; {{ item.typologyTitle }}
+                    </span>
+                    <h4 class="font-bold text-slate-800 text-sm md:text-base mt-0.5">{{ item.title }}</h4>
+                  </div>
+
+                  <!-- Badge do Status Atual -->
+                  <div class="flex items-center gap-2">
+                    @if (itemSalvoFeedback() === item.id) {
+                      <span class="inline-flex items-center gap-1 text-emerald-600 text-[10px] font-extrabold animate-pulse bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        ✓ SALVO
+                      </span>
+                    }
+                    @if (item.status === 'PENDENTE') {
+                      <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 font-bold text-[10px] px-2.5 py-1 rounded-full uppercase border border-amber-200">
+                        <span class="w-1 h-1 bg-amber-600 rounded-full animate-ping"></span>
+                        Aguardando Inspeção
+                      </span>
+                    } @else if (item.status === 'CONFORME' || item.status === 'PASS') {
+                      <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] px-2.5 py-1 rounded-full uppercase border border-emerald-200">
+                        Pass (Conforme)
+                      </span>
+                    } @else if (item.status === 'NAO_CONFORME' || item.status === 'FAIL') {
+                      <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-700 font-bold text-[10px] px-2.5 py-1 rounded-full uppercase border border-rose-200">
+                        Fail (Falha)
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center gap-1 bg-slate-50 text-slate-600 font-bold text-[10px] px-2.5 py-1 rounded-full uppercase border border-slate-200">
+                        Não Aplicável (N/A)
+                      </span>
+                    }
+                  </div>
+                </div>
+
+                <p class="text-slate-600 text-xs md:text-sm leading-relaxed mb-4">{{ item.description }}</p>
+
+                <!-- Botoes de Acao de Status -->
+                <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+                  <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider mr-2">Avaliação de Campo:</span>
+                  
+                  <button (click)="alterarStatusItem(item.id, 'PASS')"
+                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 ' + 
+                                   (item.status === 'CONFORME' || item.status === 'PASS' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white hover:bg-emerald-50 text-emerald-800 border-slate-200 hover:border-emerald-200')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <span>Pass (Aprovado)</span>
+                  </button>
+
+                  <button (click)="alterarStatusItem(item.id, 'FAIL')"
+                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 ' + 
+                                   (item.status === 'NAO_CONFORME' || item.status === 'FAIL' ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white hover:bg-rose-50 text-rose-800 border-slate-200 hover:border-rose-200')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>Fail (Falha)</span>
+                  </button>
+
+                  <button (click)="alterarStatusItem(item.id, 'NA')"
+                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 ' + 
+                                   (item.status === 'NAO_APLICAVEL' || item.status === 'NA' ? 'bg-slate-700 text-white border-slate-700 shadow-sm' : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    <span>N/A (Não Aplicável)</span>
+                  </button>
+                </div>
+
+                <!-- Painel Extra se Falha (FAIL) -->
+                @if (item.status === 'NAO_CONFORME' || item.status === 'FAIL') {
+                  <div class="mt-4 p-4 border border-rose-200 rounded-lg bg-rose-50/40 space-y-4">
+                    
+                    <!-- (1º) Bloco de EVIDÊNCIA FOTOGRÁFICA -->
+                    <div class="flex flex-col gap-2.5">
+                      <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                          <button type="button" (click)="abrirCaptura(item, 'contexto')"
+                                  class="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-[10px] font-bold rounded-lg uppercase tracking-wide flex items-center gap-1.5 transition-colors cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                            </svg>
+                            <span>+ Foto de Contexto</span>
+                          </button>
+                          
+                          <button type="button" (click)="abrirCaptura(item, 'detalhe')"
+                                  class="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-[10px] font-bold rounded-lg uppercase tracking-wide flex items-center gap-1.5 transition-colors cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 15.75l-2.489-2.489m0 0a3.375 3.375 0 10-4.773-4.773 3.375 3.375 0 004.774 4.774zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>+ Foto de Detalhe</span>
+                          </button>
+                        </div>
+
+                        @if (item.id_evidencias?.length) {
+                          <button type="button" (click)="abrirGaleria(item)"
+                                  class="text-[10px] font-semibold text-rose-700 bg-rose-100/60 px-2 py-1 rounded-md hover:bg-rose-200/60 transition-colors cursor-pointer">
+                            {{ item.id_evidencias.length }} evidência(s) —
+                            {{ itemGaleriaAberta() === item.id ? 'ocultar' : 'ver fotos' }}
+                          </button>
+                        }
+                      </div>
+
+                      @if (item.id_evidencias?.length && itemGaleriaAberta() === item.id) {
+                        <div class="mt-2 flex flex-col gap-3">
+                          @for (e of evidenciasGaleria(); track e.url) {
+                            <div class="border border-rose-100 rounded-lg overflow-hidden bg-white">
+                              <img [src]="e.url" alt="Evidência fotográfica"
+                                   class="w-full max-h-56 object-contain bg-slate-50" />
+                              <div class="p-2 text-[10px] text-slate-600 space-y-0.5">
+                                <p class="font-semibold uppercase tracking-wide text-rose-700">
+                                  {{ e.ev.tipo === 'contexto' ? 'Contexto' : 'Detalhe' }}
+                                  · {{ e.ev.timestamp | date:'dd/MM/yy HH:mm' }}
+                                </p>
+                                @if (e.ev.geo) {
+                                  <p>📍 {{ e.ev.geo.lat | number:'1.5-5' }}, {{ e.ev.geo.lng | number:'1.5-5' }}@if (e.ev.geo.accuracy) {<span> · ±{{ e.ev.geo.accuracy | number:'1.0-0' }}m</span>}</p>
+                                } @else {
+                                  <p class="text-slate-400 italic">📍 Sem localização</p>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      }
+
+                      @if (item.diagnostico_ia) {
+                        <div class="p-3 bg-white border border-rose-100 rounded-lg text-xs space-y-1">
+                          <div class="flex items-center gap-1.5 text-rose-800 font-extrabold text-[10px] uppercase tracking-wider">
+                            <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l3.582-1.341c.218-.081.44-.122.664-.122h1.5a1.5 1.5 0 001.5-1.5V14.5A1.5 1.5 0 0014.5 13H10.4a1 1 0 01-.588-.188L7.5 11.5M12 2.25c4.136 0 7.5 3.124 7.5 7.5 0 2.288-.95 4.316-2.457 5.711A6.733 6.733 0 0112 18c-1.848 0-3.53-.74-4.81-1.95A7.481 7.481 0 014.5 9.75c0-4.376 3.364-7.5 7.5-7.5z"/>
+                            </svg>
+                            <span>Diagnóstico IA (sugestão)</span>
+                          </div>
+                          <p class="text-slate-600 text-[11px] leading-relaxed">{{ item.diagnostico_ia }}</p>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- (2º) Bloco de GRAU DE CRITICIDADE -->
+                    <div class="pt-3 border-t border-rose-100/60 flex flex-col gap-2.5">
+                      @if (!item.severity) {
+                        <p class="text-[10px] text-slate-500 italic flex items-center gap-1.5">
+                          <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                          </svg>
+                          @if (item.correlacaoFotoPatologia === 'DIVERGENTE' || item.correlacaoFotoPatologia === 'INCONCLUSIVA') {
+                            <span>A foto registrada não confirma esta patologia — classifique o grau de risco manualmente.</span>
+                          } @else if (!item.id_evidencias?.length) {
+                            <span>Dica: tire uma foto acima para a IA sugerir o grau — ou classifique manualmente.</span>
+                          } @else {
+                            <span>Classifique o grau de risco manualmente.</span>
+                          }
+                        </p>
+                      }
+
+                      <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-rose-800 uppercase tracking-wide">Grau de Criticidade:</span>
+                        <div class="flex gap-2">
+                          @for (gravidade of ['Mínimo', 'Regular', 'Crítico']; track gravidade) {
+                            <button (click)="alterarGravidadeItem(item.id, $any(gravidade))"
+                                    [class]="'px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase border transition-all cursor-pointer ' + 
+                                             (item.severity === gravidade ? 
+                                               (gravidade === 'Mínimo' ? 'bg-amber-100 text-amber-800 border-amber-300' : 
+                                                gravidade === 'Regular' ? 'bg-orange-100 text-orange-800 border-orange-300' : 
+                                                                       'bg-rose-100 text-rose-800 border-rose-300') : 
+                                               'bg-white text-slate-500 border-slate-200 hover:bg-slate-50')">
+                              {{ gravidade }}
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- (3º) MEMORIAL DESCRITIVO — Seção 9 do RTIPA -->
+                    <div class="pt-3 border-t border-rose-100/60 flex flex-col gap-2.5">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-rose-800 uppercase tracking-wide flex items-center gap-1.5">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                          </svg>
+                          Memorial Descritivo
+                        </span>
+                        @if (item.memorialDescritivo) {
+                          <span class="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">Gerado ✓</span>
+                        }
+                      </div>
+
+                      @if (item.memorialDescritivo) {
+                        <div class="p-3 bg-white border border-rose-100 rounded-lg text-[11px] text-slate-600 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-line">
+                          {{ item.memorialDescritivo }}
+                        </div>
+                      }
+
+                      @if (!item.severity) {
+                        <p class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5 italic">
+                          Classifique o grau de risco acima antes de gerar o memorial descritivo.
+                        </p>
+                      }
+                      <button type="button"
+                              (click)="gerarMemorialItem(item)"
+                              [disabled]="!item.severity || gerandoMemorialId() === item.id || (gerandoMemorialId() !== null && gerandoMemorialId() !== item.id)"
+                              class="px-3 py-1.5 text-[10px] font-bold rounded-lg uppercase tracking-wide flex items-center gap-1.5 transition-colors cursor-pointer border disabled:opacity-50 disabled:cursor-not-allowed"
+                              [class]="item.memorialDescritivo
+                                ? 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+                                : 'bg-rose-700 hover:bg-rose-800 text-white border-rose-700'">
+                        @if (gerandoMemorialId() === item.id) {
+                          <span class="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block"></span>
+                          <span>Gerando memorial…</span>
+                        } @else if (item.memorialDescritivo) {
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                          </svg>
+                          <span>Regenerar Memorial</span>
+                        } @else {
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                          </svg>
+                          <span>Gerar Memorial Descritivo</span>
+                        }
+                      </button>
+                    </div>
+
+                    <!-- (4º) VINCULAR COMPOSIÇÃO DE CUSTO (Orçamento de Referência - Seção 8) -->
+                    <div class="pt-3 border-t border-rose-100/60 flex flex-col gap-2.5">
+                      <span class="text-xs font-bold text-rose-800 uppercase tracking-wide flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-rose-700 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Composições de Custo Vincular
+                      </span>
+
+                      @if (orcamentoService.listarComposicoes().length === 0) {
+                        <p class="text-[11px] text-slate-500 italic bg-white p-2.5 rounded-lg border border-rose-100/60">
+                          Nenhuma composição de custo cadastrada no banco. O catálogo de composições da JI Construtora nascerá após auditoria das planilhas de referência.
+                        </p>
+                      } @else {
+                        <div class="space-y-1.5 max-h-40 overflow-y-auto bg-white p-2 border border-rose-100 rounded-lg">
+                          @for (comp of orcamentoService.listarComposicoes(); track comp.id) {
+                            @let aplicada = (item.composicoesAplicadas ?? []).includes(comp.id);
+                            <button type="button"
+                                    (click)="toggleComposicaoItem(item.id, comp.id)"
+                                    class="w-full text-left p-2 rounded-lg text-[11px] transition-all flex items-center justify-between border cursor-pointer"
+                                    [class]="aplicada
+                                      ? 'bg-rose-50 border-rose-300 text-rose-950 font-semibold'
+                                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'">
+                              <div class="flex-1 pr-3 flex items-center gap-1.5">
+                                <span class="bg-rose-100 text-rose-800 px-1 rounded text-[9px] font-mono font-bold">{{ comp.codigo }}</span>
+                                <span class="truncate">{{ comp.descricao }}</span>
+                              </div>
+                              <div class="flex items-center gap-1.5 font-semibold text-rose-900 flex-shrink-0">
+                                <span>R$ {{ orcamentoService.calcularComposicao(comp).totalGeral | number:'1.2-2' }}</span>
+                                @if (aplicada) {
+                                  <svg class="w-4 h-4 text-rose-700 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                  </svg>
+                                } @else {
+                                  <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="9" />
+                                  </svg>
+                                }
+                              </div>
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                  </div>
+                }
+
+                <!-- Campo de Anotações rápidas de campo -->
+                <div class="mt-3">
+                  <input #notesInput
+                         [value]="item.notes" 
+                         (input)="atualizarNotasItem(item.id, $event)" 
+                         maxlength="500"
+                         placeholder="Anote o que observou — sempre, mesmo em itens Conformes ou N/A (a IA usará isto no laudo)..." 
+                         class="w-full px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 hover:bg-white focus:bg-white transition-all">
+                  <div class="flex justify-end mt-0.5">
+                    <span class="text-[10px] tabular-nums"
+                          [class.text-slate-400]="notesInput.value.length < 400"
+                          [class.text-amber-500]="notesInput.value.length >= 400 && notesInput.value.length < 480"
+                          [class.text-red-500]="notesInput.value.length >= 480">
+                      {{ notesInput.value.length }}/500
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Campo de Quantitativo verificado em campo -->
+                <div class="mt-2">
+                  <input [value]="item.quantitativo || ''"
+                         (input)="atualizarQuantitativoItem(item.id, $event)"
+                         placeholder="Quantitativo verificado (ex.: 12 m², fissura de 1,5 m, 3 pontos de infiltração)"
+                         class="w-full px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 hover:bg-white focus:bg-white transition-all">
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Modal de Confirmação de Exclusão In-App -->
+@if (vistoriaParaExcluir()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-100 overflow-hidden transform transition-all p-6 space-y-6">
+      
+      <!-- Cabeçalho -->
+      <div class="flex items-start gap-4">
+        <div class="p-3 bg-rose-50 text-rose-600 rounded-xl flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">Confirmar Exclusão</h3>
+          <p class="text-sm text-slate-500 mt-1">
+            Você tem certeza que deseja excluir a vistoria do edifício <strong class="text-slate-800 font-semibold">{{ vistoriaParaExcluir()?.buildingName }}</strong>?
+          </p>
+        </div>
+      </div>
+
+      <!-- Aviso -->
+      <div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <span class="text-xs text-amber-800 leading-relaxed font-medium">Esta ação removerá permanentemente todos os registros de conformidade e não poderá ser desfeita.</span>
+      </div>
+
+      <!-- Botões -->
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" 
+                (click)="cancelarExclusao()" 
+                class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-colors cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" 
+                (click)="confirmarExclusao()" 
+                class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-sm shadow-sm transition-colors cursor-pointer flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Excluir Permanentemente</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+<!-- Modal de Captura de Evidência e Diagnóstico por IA -->
+@if (itemCapturandoEvidencia()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all flex flex-col">
+      
+      <!-- Cabeçalho -->
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Capturar Evidência</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">
+            Foto de <strong class="text-slate-700 font-semibold">{{ tipoEvidencia() === 'contexto' ? 'Ambiente / Contexto' : 'Macrofoto / Detalhe' }}</strong> para o item: <strong class="text-slate-700 font-semibold">{{ itemCapturandoEvidencia()?.title }}</strong>
+          </p>
+        </div>
+        <button type="button" (click)="fecharCaptura()" class="text-slate-400 hover:text-slate-600 transition-colors p-1.5 hover:bg-slate-200/50 rounded-lg cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Área do Vídeo / Preview / Upload -->
+      <div class="relative aspect-video bg-black flex items-center justify-center overflow-hidden"
+           (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event)">
+        
+        <!-- Alternar para upload se desejado -->
+        @if (!cameraIndisponivel() && !capturando() && !analisandoIa()) {
+          <button type="button" (click)="cameraIndisponivel.set(true); camera.parar(); streamCamera.set(null)"
+                  class="absolute top-3 right-3 px-2 py-1 bg-slate-900/80 hover:bg-slate-900 text-white text-[10px] font-bold rounded-lg uppercase tracking-wide flex items-center gap-1 transition-colors cursor-pointer backdrop-blur-sm z-10">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
+            </svg>
+            <span>Enviar Arquivo</span>
+          </button>
+        }
+
+        @if (cameraIndisponivel()) {
+          <!-- Fallback de Drag & Drop / File Select -->
+          <div class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center transition-all cursor-pointer"
+               [class.bg-slate-800]="dragOver()"
+               (click)="fileInput.click()">
+            <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" class="hidden" />
+            
+            <div class="w-12 h-12 rounded-full bg-slate-800/80 text-rose-500 flex items-center justify-center mb-3 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
+              </svg>
+            </div>
+            
+            <p class="text-xs font-bold text-slate-200">Arraste a foto da evidência ou clique aqui</p>
+            <p class="text-[10px] text-slate-400 mt-1">Suporta imagens JPEG, PNG, WEBP</p>
+          </div>
+        } @else if (streamCamera()) {
+          @if (camera.simulacaoAtiva()) {
+            <div class="absolute top-0 inset-x-0 bg-red-600 text-white text-[11px] font-bold text-center py-1.5 px-2 z-20">
+              ⚠ CÂMERA SIMULADA — esta imagem NÃO é evidência real
+            </div>
+          }
+          <video autoplay playsinline [srcObject]="streamCamera()" class="w-full h-full object-cover"></video>
+        } @else {
+          <div class="text-center p-6 space-y-2">
+            <div class="w-10 h-10 border-4 border-slate-600 border-t-rose-500 rounded-full animate-spin mx-auto"></div>
+            <p class="text-xs text-slate-400">Iniciando câmera traseira...</p>
+          </div>
+        }
+
+        <!-- Overlays de Estado -->
+        @if (capturando()) {
+          <div class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center gap-3 backdrop-blur-[2px] z-20">
+            <div class="p-3 bg-white/10 rounded-full animate-pulse text-white">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+              </svg>
+            </div>
+            <span class="text-xs font-bold text-white uppercase tracking-wider">Salvando Foto...</span>
+          </div>
+        }
+
+        @if (analisandoIa()) {
+          <div class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center gap-3 backdrop-blur-[3px] z-20">
+            <div class="flex items-center gap-1">
+              <span class="w-3.5 h-3.5 bg-rose-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span class="w-3.5 h-3.5 bg-rose-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span class="w-3.5 h-3.5 bg-rose-500 rounded-full animate-bounce"></span>
+            </div>
+            <span class="text-xs font-bold text-white uppercase tracking-wider">Analisando com IA...</span>
+          </div>
+        }
+      </div>
+
+      <!-- Barra de Controle Inferior -->
+      <div class="p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
+        <button type="button" (click)="fecharCaptura()" [disabled]="capturando() || analisandoIa()"
+                class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs border border-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+          Cancelar
+        </button>
+        
+        @if (!cameraIndisponivel()) {
+          <button type="button" (click)="capturarEAnalisar()" [disabled]="!streamCamera() || capturando() || analisandoIa()"
+                  class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center gap-2 disabled:bg-slate-400 disabled:cursor-not-allowed cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+            </svg>
+            <span>Bater Foto & Analisar</span>
+          </button>
+        } @else {
+          <button type="button" (click)="fileInput.click()" [disabled]="capturando() || analisandoIa()"
+                  class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-sm transition-colors flex items-center gap-2 disabled:bg-slate-400 disabled:cursor-not-allowed cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
+            </svg>
+            <span>Selecionar Foto & Analisar</span>
+          </button>
+        }
+      </div>
+
+    </div>
+  </div>
+}
