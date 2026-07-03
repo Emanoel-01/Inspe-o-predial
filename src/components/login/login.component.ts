@@ -12,8 +12,8 @@ export class LoginComponent {
   loginSuccess = output<void>();
   loginAsGuest = output<void>();
 
-  email = signal('emanoel@amorimtech.com.br');
-  password = signal('123456');
+  email = signal('');
+  password = signal('');
 
   private toastService = inject(ToastService);
 

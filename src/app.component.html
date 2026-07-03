@@ -156,13 +156,7 @@
         <main>
           @switch (activeView()) {
             @case ('visao-geral') { <app-visao-geral /> }
-            @case ('estrutura') { <app-system-category categoryKey="estrutura" [userProfile]="userProfile()" /> }
-            @case ('instalacoes') { <app-system-category categoryKey="instalacoes" [userProfile]="userProfile()" /> }
-            @case ('seguranca') { <app-system-category categoryKey="seguranca" [userProfile]="userProfile()" /> }
-            @case ('externas') { <app-system-category categoryKey="externas" [userProfile]="userProfile()" /> }
             @case ('checklist') { <app-checklist-inspecao /> }
-            @case ('ocorrencias') { <app-ocorrencia /> }
-            @case ('reforma') { <app-reforma /> }
             @case ('admin') { <app-admin-panel /> }
             @default { <app-visao-geral /> }
           }
@@ -170,29 +164,11 @@
       </div>
     </div>
 
-    <!-- FLOATING ASSISTANT BUTTONS -->
-    <div class="fixed bottom-6 right-6 z-20 flex flex-col items-end gap-4">
-      <button (click)="openAssistant(isDiagnosisModalOpen)" class="assist-button bg-amber-500 text-white rounded-full p-4 shadow-lg hover:bg-amber-600" title="Diagnóstico por Imagem">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 0 0 9 22a4 4 0 0 0 5-4.815a4 4 0 0 0 .556-6.588 4 4 0 0 0-2.526-5.77A3 3 0 0 0 12 5Z"/><path d="M12 5a3 3 0 1 0 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 0 1 15 22a4 4 0 0 1-5-4.815a4 4 0 0 1-.556-6.588 4 4 0 0 1 2.526-5.77A3 3 0 0 1 12 5Z"/><path d="M12 9a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0Z"/><path d="M12 13a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0Z"/><path d="m15.5 6.5 1-1"/><path d="m18.5 9.5 1-1"/><path d="m18.5 14.5 1 1"/><path d="m15.5 17.5 1 1"/><path d="m8.5 6.5-1-1"/><path d="m5.5 9.5-1-1"/><path d="m5.5 14.5-1 1"/><path d="m8.5 17.5-1 1"/></svg>
-      </button>
-      <button (click)="openAssistant(isInspectionModalOpen)" class="assist-button bg-sky-700 text-white rounded-full p-4 shadow-lg hover:bg-sky-800" title="Assistente de Inspeção">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
-      </button>
-       <button (click)="openAssistant(isTechDiagnosisModalOpen)" class="assist-button bg-teal-600 text-white rounded-full p-4 shadow-lg hover:bg-teal-700" title="Diagnóstico Técnico">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4"/><path d="M19 17v4"/><path d="M12 3v4"/><path d="M5 17v4"/><path d="M19 3v4"/><path d="M12 17v4"/><path d="m12 15-2-3 2-3 2 3-2 3Z"/><path d="M19 15-2-3 2-3 2 3-2 3Z"/><path d="M5 15-2-3 2-3 2 3-2 3Z"/><path d="m12 8 2-3-2-3-2 3 2 3Z"/><path d="M19 8l2-3-2-3-2 3 2 3Z"/><path d="M5 8l2-3-2-3-2 3 2 3Z"/></svg>
-      </button>
-      <button (click)="openAssistant(isMaintenanceScheduleModalOpen)" class="assist-button bg-indigo-600 text-white rounded-full p-4 shadow-lg hover:bg-indigo-700" title="Cronograma de Manutenção">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
-      </button>
-    </div>
+
   </div>
 }
 
 <!-- MODALS -->
-<app-image-diagnosis-modal [isOpen]="isDiagnosisModalOpen()" (closeModal)="isDiagnosisModalOpen.set(false)" />
-<app-inspection-assistant-modal [isOpen]="isInspectionModalOpen()" [userProfile]="userProfile()" (closeModal)="isInspectionModalOpen.set(false)" />
-<app-tech-diagnosis-modal [isOpen]="isTechDiagnosisModalOpen()" [userProfile]="userProfile()" (closeModal)="isTechDiagnosisModalOpen.set(false)" />
-<app-maintenance-schedule-modal [isOpen]="isMaintenanceScheduleModalOpen()" [userProfile]="userProfile()" (closeModal)="isMaintenanceScheduleModalOpen.set(false)" />
 <app-user-profile-modal [isOpen]="isProfileModalOpen()" [profileData]="userProfile()" (closeModal)="isProfileModalOpen.set(false)" (profileUpdate)="onProfileUpdate($event)" (logout)="handleLogout()" />
 <app-toast />
 

@@ -1,16 +1,11 @@
 import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
-import { EbookGeneratorComponent } from '../ebook-generator/ebook-generator.component';
-import { SummaryEbookGeneratorComponent } from '../summary-ebook-generator/summary-ebook-generator.component';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-visao-geral',
   templateUrl: './visao-geral.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    EbookGeneratorComponent,
-    SummaryEbookGeneratorComponent
-  ],
+  imports: [],
 })
 export class VisaoGeralComponent {
   private toastService = inject(ToastService);
