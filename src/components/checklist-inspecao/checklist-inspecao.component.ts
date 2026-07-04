@@ -146,6 +146,7 @@ export class ChecklistInspecaoComponent implements OnInit {
   evidenciasGaleria = signal<{ url: string; ev: Evidencia }[]>([]);
   fichaEmEdicaoId = signal<string | null>(null);
   itemDaFichaEmEdicaoId = signal<string | null>(null);
+  fichaPendenteConfirmacaoExclusao = signal<string | null>(null);
 
   private sinalizarSalvo(itemId: string): void {
     this.itemSalvoFeedback.set(itemId);
@@ -298,9 +299,17 @@ export class ChecklistInspecaoComponent implements OnInit {
     }
   }
 
-  confirmarExcluirOcorrencia(itemId: string, fichaId: string): void {
-    if (confirm('Tem certeza que deseja excluir esta ocorrência?')) {
+  solicitarExclusaoOcorrencia(itemId: string, fichaId: string): void {
+    if (this.fichaPendenteConfirmacaoExclusao() === fichaId) {
       this.excluirOcorrencia(itemId, fichaId);
+      this.fichaPendenteConfirmacaoExclusao.set(null);
+    } else {
+      this.fichaPendenteConfirmacaoExclusao.set(fichaId);
+      setTimeout(() => {
+        if (this.fichaPendenteConfirmacaoExclusao() === fichaId) {
+          this.fichaPendenteConfirmacaoExclusao.set(null);
+        }
+      }, 3000);
     }
   }
 
