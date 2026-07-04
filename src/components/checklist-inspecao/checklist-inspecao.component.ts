@@ -57,12 +57,18 @@ export interface Anexo {
   dataUpload: string;  // new Date().toISOString()
 }
 
+export type DisponibilidadeNorteador = 'A_AVALIAR' | 'DD' | 'DND' | 'NA';
+export type ConformidadeNorteador   = 'EC' | 'NC';
+
 export interface DocumentoNorteador {
   id: string;
-  descricao: string;                                              // ex.: "Projeto Arquitetônico As-Built"
-  status: 'PENDENTE' | 'DISPONIVEL' | 'ANALISADO' | 'NAO_APLICAVEL';
+  grupo: string;                              // ex.: 'Administrativos e técnicos'
+  descricao: string;                          // vem do seed; read-only na UI (editável só em item extra)
+  seed: boolean;                              // true = item canônico do LIP; false = item extra do RT
+  disponibilidade: DisponibilidadeNorteador;  // default 'A_AVALIAR'
+  conformidade?: ConformidadeNorteador;       // SÓ quando disponibilidade === 'DD'
   observacao?: string;
-  anexos: Anexo[];                                                // metadados; blobs no store
+  anexos: Anexo[];                            // metadados; blobs no store
 }
 
 export interface Vistoria {
@@ -127,8 +133,34 @@ const METODOLOGIA_NIVEL: Record<'1' | '2' | '3', string> = {
 const JUSTIFICATIVA_NIVEL: Record<'1' | '2' | '3', string> = {
   '1': 'Justifica-se a adoção do Nível 1 pela inexistência de documentação técnica histórica do imóvel, associada a uma demanda de vistoria preliminar para identificação rápida de manifestações patológicas aparentes, sem indícios iniciais de risco estrutural generalizado ou iminente que exijam ensaios específicos.',
   '2': 'Justifica-se a adoção do Nível 2 devido à existência de acervo documental parcial ou completo da edificação, necessitando-se de uma avaliação sistemática e detalhada para organizar o planejamento de manutenção preventiva/corretiva a médio prazo.',
-  '3': 'Justifica-se a adoção do Nível 3 pela constatação prévia de graves anomalias com potencial comprometimento estrutural ou de segurança, demandando-se ensaios específicos e investigação profunda para determinar causas, mecanismos de degradação e diretrizes precisas de reabilitação.'
+  '3': 'Justifica-se a adoção do Nível 3 pela constatação prévia de graves anomalias com potencial comprometimento estrutural ou de segurança, demandando-se ensaios específicos e investigação profunda para determinar causas, mechanisms de degradação e diretrizes precisas de reabilitação.'
 };
+
+const SEED_NORTEADORES_RAW: { grupo: string; descricao: string }[] = [
+  { grupo: 'Administrativos e técnicos', descricao: 'Manual de uso, operação e manutenção da edificação' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Manuais técnicos de equipamentos instalados' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Auto de conclusão (Habite-se)' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Alvará de funcionamento' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Alvará de instalação de elevadores' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Alvará de funcionamento de elevadores' },
+  { grupo: 'Administrativos e técnicos', descricao: 'AVCB — Auto de Vistoria do Corpo de Bombeiros' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Projetos legais aprovados (poder público, SCI, concessionárias)' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Projetos executivos' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Regimento interno' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Licenças ambientais' },
+  { grupo: 'Administrativos e técnicos', descricao: 'TAC ambiental' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Outorga de poço profundo' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Outorga de ETE' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Cadastro de máquinas e equipamentos' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Atestado de brigada de incêndio' },
+  { grupo: 'Administrativos e técnicos', descricao: 'RIA — Relatório de Inspeção Anual de elevadores' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Contrato de manutenção — elevadores' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Contrato de manutenção — geradores' },
+  { grupo: 'Administrativos e técnicos', descricao: 'Contrato de manutenção — SCI (combate a incêndio)' },
+  { grupo: 'Manutenção e operação', descricao: 'PMOC — Plano de Manutenção, Operação e Controle' },
+  { grupo: 'Manutenção e operação', descricao: 'Atestado de desratização / desinsetização' },
+  { grupo: 'Manutenção e operação', descricao: 'Atestado SPDA + medição ôhmica' }
+];
 
 @Component({
   selector: 'app-checklist-inspecao',
@@ -174,6 +206,38 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   anexoUrls = signal<Record<string, string>>({});
   anexoPendenteConfirmacaoExclusao = signal<string | null>(null);
   norteadorPendenteConfirmacaoExclusao = signal<string | null>(null);
+
+  norteadoresAgrupados = computed(() => {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return [];
+
+    const docs = ativa.documentosNorteadores ?? [];
+    
+    const gruposMap = new Map<string, DocumentoNorteador[]>();
+    for (const doc of docs) {
+      const g = doc.grupo || 'Outros';
+      if (!gruposMap.has(g)) {
+        gruposMap.set(g, []);
+      }
+      gruposMap.get(g)!.push(doc);
+    }
+
+    const ordemSugerida = ['Administrativos e técnicos', 'Manutenção e operação', 'Itens adicionais'];
+    const resultado: { nome: string; documentos: DocumentoNorteador[] }[] = [];
+    
+    for (const g of ordemSugerida) {
+      if (gruposMap.has(g)) {
+        resultado.push({ nome: g, documentos: gruposMap.get(g)! });
+        gruposMap.delete(g);
+      }
+    }
+
+    for (const [nome, documentos] of gruposMap.entries()) {
+      resultado.push({ nome, documentos });
+    }
+
+    return resultado;
+  });
 
   private sinalizarSalvo(itemId: string): void {
     this.itemSalvoFeedback.set(itemId);
@@ -2729,9 +2793,17 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       this.toastService.show('Selecione uma vistoria ativa para acessar os Documentos Norteadores.', 'error');
       return;
     }
-    // Inicializa a lista de norteadores se necessário
-    if (!ativa.documentosNorteadores) {
-      this.atualizarVistoriaAtiva({ documentosNorteadores: [] });
+    // Inicializa a lista de norteadores se necessário (semeando)
+    if (!ativa.documentosNorteadores || ativa.documentosNorteadores.length === 0) {
+      const seedItems: DocumentoNorteador[] = SEED_NORTEADORES_RAW.map(item => ({
+        id: crypto.randomUUID(),
+        grupo: item.grupo,
+        descricao: item.descricao,
+        seed: true,
+        disponibilidade: 'A_AVALIAR',
+        anexos: []
+      }));
+      this.atualizarVistoriaAtiva({ documentosNorteadores: seedItems });
     }
     this.modoExibicao.set('NORTEADORES');
     void this.carregarUrlsAnexos();
@@ -2750,8 +2822,10 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     const novoDoc: DocumentoNorteador = {
       id: crypto.randomUUID(),
+      grupo: 'Itens adicionais',
       descricao: '',
-      status: 'PENDENTE',
+      seed: false,
+      disponibilidade: 'A_AVALIAR',
       anexos: []
     };
 
@@ -2774,13 +2848,41 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
   }
 
-  salvarStatusNorteador(docId: string, status: 'PENDENTE' | 'DISPONIVEL' | 'ANALISADO' | 'NAO_APLICAVEL'): void {
+  setDisponibilidade(docId: string, event: Event): void {
     const ativa = this.vistoriaAtiva();
     if (!ativa) return;
 
+    const select = event.target as HTMLSelectElement;
+    const value = select.value as DisponibilidadeNorteador;
+
+    console.log(`setDisponibilidade disparado para ${docId}: ${value}`); // Prova de evento 0.4
+
     const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
       if (doc.id === docId) {
-        return { ...doc, status };
+        const updated = { ...doc, disponibilidade: value };
+        if (value !== 'DD') {
+          delete updated.conformidade;
+        }
+        return updated;
+      }
+      return doc;
+    });
+
+    this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
+  }
+
+  setConformidade(docId: string, event: Event): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const select = event.target as HTMLSelectElement;
+    const value = (select.value || undefined) as ConformidadeNorteador | undefined;
+
+    console.log(`setConformidade disparado para ${docId}: ${value}`); // Prova de evento 0.4
+
+    const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
+      if (doc.id === docId) {
+        return { ...doc, conformidade: value };
       }
       return doc;
     });
