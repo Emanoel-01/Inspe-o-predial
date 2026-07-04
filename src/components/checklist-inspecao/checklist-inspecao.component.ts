@@ -219,9 +219,14 @@ export class ChecklistInspecaoComponent implements OnInit {
       item.ocorrencias = [];
     }
     if (item.ocorrencias.length === 0) {
+      const ativa = this.vistoriaAtiva();
+      const proximoNumero = (ativa?.contadorFichas ?? 0) + 1;
+      if (ativa) {
+        ativa.contadorFichas = proximoNumero;
+      }
       const nova: FichaDano = {
         id: 'ficha-' + crypto.randomUUID(),
-        numeroFicha: 1,
+        numeroFicha: proximoNumero,
         notes: '',
         dateCreated: new Date().toISOString(),
         dateUpdated: new Date().toISOString()
