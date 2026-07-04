@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService, NormaRef } from '../../services/data.service';
 import { ToastService } from '../../services/toast.service';
@@ -49,6 +49,22 @@ export interface FotoGeral {
   timestamp: string;
 }
 
+export interface Anexo {
+  id: string;          // crypto.randomUUID()
+  nome: string;        // file.name
+  tipo: string;        // MIME real — file.type (ex.: 'image/png', 'application/pdf')
+  tamanho: number;     // file.size (bytes)
+  dataUpload: string;  // new Date().toISOString()
+}
+
+export interface DocumentoNorteador {
+  id: string;
+  descricao: string;                                              // ex.: "Projeto Arquitetônico As-Built"
+  status: 'PENDENTE' | 'DISPONIVEL' | 'ANALISADO' | 'NAO_APLICAVEL';
+  observacao?: string;
+  anexos: Anexo[];                                                // metadados; blobs no store
+}
+
 export interface Vistoria {
   id: string;
   buildingName: string;
@@ -82,6 +98,7 @@ export interface Vistoria {
   dateUpdated: string;
   progress: number;
   items: ChecklistItem[];
+  documentosNorteadores?: DocumentoNorteador[];
 }
 
 const SCHEMA_ANALISE_EVIDENCIA = {
@@ -119,7 +136,7 @@ const JUSTIFICATIVA_NIVEL: Record<'1' | '2' | '3', string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
 })
-export class ChecklistInspecaoComponent implements OnInit {
+export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   private dataService = inject(DataService);
   private toastService = inject(ToastService);
   private dbService = inject(VistoriaDbService);
@@ -153,6 +170,10 @@ export class ChecklistInspecaoComponent implements OnInit {
   fichaEmEdicaoId = signal<string | null>(null);
   itemDaFichaEmEdicaoId = signal<string | null>(null);
   fichaPendenteConfirmacaoExclusao = signal<string | null>(null);
+
+  anexoUrls = signal<Record<string, string>>({});
+  anexoPendenteConfirmacaoExclusao = signal<string | null>(null);
+  norteadorPendenteConfirmacaoExclusao = signal<string | null>(null);
 
   private sinalizarSalvo(itemId: string): void {
     this.itemSalvoFeedback.set(itemId);
@@ -395,7 +416,7 @@ export class ChecklistInspecaoComponent implements OnInit {
   filtroSistema = signal<string>('TODOS');
 
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
-  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO'>('LISTA');
+  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES'>('LISTA');
   vistoriaEmEdicao = signal<Vistoria | null>(null);
 
   // Carregar os sistemas organizados da base de dados estática
@@ -489,6 +510,10 @@ export class ChecklistInspecaoComponent implements OnInit {
   ngOnInit(): void {
     void this.carregarVistorias();
     this.carregarPerfilDoLocalStorage();
+  }
+
+  ngOnDestroy(): void {
+    this.limparUrlsAnexos();
   }
 
   carregarPerfilDoLocalStorage(): void {
@@ -1501,6 +1526,16 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     } else {
       void this.salvarVistorias(listaAtualizada);
     }
+  }
+
+  private atualizarVistoriaAtiva(patch: Partial<Vistoria>): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+    const atualizada: Vistoria = { ...ativa, ...patch, dateUpdated: new Date().toISOString() };
+    const lista = this.vistorias().map(v => v.id === atualizada.id ? atualizada : v);
+    this.vistorias.set(lista);
+    this.vistoriaAtiva.set(atualizada);
+    void this.salvarVistorias(lista);
   }
 
   voltarParaLista(): void {
@@ -2657,5 +2692,224 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     }
 
     return html;
+  }
+
+  async carregarUrlsAnexos(): Promise<void> {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    // Libera URLs antigas
+    const urlsAtuais = this.anexoUrls();
+    Object.values(urlsAtuais).forEach(url => URL.revokeObjectURL(url));
+
+    const novasUrls: Record<string, string> = {};
+    const docs = ativa.documentosNorteadores ?? [];
+    for (const doc of docs) {
+      for (const anexo of doc.anexos) {
+        if (anexo.tipo.startsWith('image/')) {
+          const ab = await this.dbService.getAnexoBlob(anexo.id);
+          if (ab) {
+            novasUrls[anexo.id] = URL.createObjectURL(ab.blob);
+          }
+        }
+      }
+    }
+    this.anexoUrls.set(novasUrls);
+  }
+
+  limparUrlsAnexos(): void {
+    const urlsAtuais = this.anexoUrls();
+    Object.values(urlsAtuais).forEach(url => URL.revokeObjectURL(url));
+    this.anexoUrls.set({});
+  }
+
+  navegarParaNorteadores(): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) {
+      this.toastService.show('Selecione uma vistoria ativa para acessar os Documentos Norteadores.', 'error');
+      return;
+    }
+    // Inicializa a lista de norteadores se necessário
+    if (!ativa.documentosNorteadores) {
+      this.atualizarVistoriaAtiva({ documentosNorteadores: [] });
+    }
+    this.modoExibicao.set('NORTEADORES');
+    void this.carregarUrlsAnexos();
+  }
+
+  voltarDeNorteadores(): void {
+    this.limparUrlsAnexos();
+    this.modoExibicao.set('EXECUCAO');
+  }
+
+  adicionarDocumentoNorteador(): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    console.log('Botão Adicionar Documento Norteador clicado.'); // Regra 0.4: prova de clique de evento
+
+    const novoDoc: DocumentoNorteador = {
+      id: crypto.randomUUID(),
+      descricao: '',
+      status: 'PENDENTE',
+      anexos: []
+    };
+
+    const atualizados = [...(ativa.documentosNorteadores ?? []), novoDoc];
+    this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
+    this.toastService.show('Novo documento norteador adicionado.', 'success');
+  }
+
+  salvarDescricaoNorteador(docId: string, descricao: string): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
+      if (doc.id === docId) {
+        return { ...doc, descricao };
+      }
+      return doc;
+    });
+
+    this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
+  }
+
+  salvarStatusNorteador(docId: string, status: 'PENDENTE' | 'DISPONIVEL' | 'ANALISADO' | 'NAO_APLICAVEL'): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
+      if (doc.id === docId) {
+        return { ...doc, status };
+      }
+      return doc;
+    });
+
+    this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
+  }
+
+  solicitarExcluirNorteador(docId: string): void {
+    console.log(`solicitarExcluirNorteador disparado para: ${docId}`); // Prova de evento 0.4
+    if (this.norteadorPendenteConfirmacaoExclusao() === docId) {
+      this.excluirNorteador(docId);
+      this.norteadorPendenteConfirmacaoExclusao.set(null);
+    } else {
+      this.norteadorPendenteConfirmacaoExclusao.set(docId);
+      this.toastService.show('Clique novamente para confirmar a exclusão do documento norteador.', 'info');
+      setTimeout(() => {
+        if (this.norteadorPendenteConfirmacaoExclusao() === docId) {
+          this.norteadorPendenteConfirmacaoExclusao.set(null);
+        }
+      }, 3000);
+    }
+  }
+
+  private async excluirNorteador(docId: string): Promise<void> {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const docIndex = (ativa.documentosNorteadores ?? []).findIndex(doc => doc.id === docId);
+    if (docIndex === -1) return;
+
+    const doc = (ativa.documentosNorteadores ?? [])[docIndex];
+    // Excluir os anexo blobs
+    for (const anexo of doc.anexos) {
+      await this.dbService.deleteAnexoBlob(anexo.id);
+    }
+
+    const atualizados = (ativa.documentosNorteadores ?? []).filter(d => d.id !== docId);
+    this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
+    this.toastService.show('Documento norteador excluído com sucesso.', 'success');
+    void this.carregarUrlsAnexos();
+  }
+
+  solicitarExcluirAnexo(docId: string, anexoId: string): void {
+    console.log(`solicitarExcluirAnexo disparado para anexo: ${anexoId} no doc: ${docId}`); // Prova de evento 0.4
+    if (this.anexoPendenteConfirmacaoExclusao() === anexoId) {
+      void this.excluirAnexo(docId, anexoId);
+      this.anexoPendenteConfirmacaoExclusao.set(null);
+    } else {
+      this.anexoPendenteConfirmacaoExclusao.set(anexoId);
+      this.toastService.show('Clique novamente para confirmar a exclusão deste anexo.', 'info');
+      setTimeout(() => {
+        if (this.anexoPendenteConfirmacaoExclusao() === anexoId) {
+          this.anexoPendenteConfirmacaoExclusao.set(null);
+        }
+      }, 3000);
+    }
+  }
+
+  private async excluirAnexo(docId: string, anexoId: string): Promise<void> {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    // Excluir o blob do banco
+    await this.dbService.deleteAnexoBlob(anexoId);
+
+    const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
+      if (doc.id === docId) {
+        const novosAnexos = doc.anexos.filter(a => a.id !== anexoId);
+        return { ...doc, anexos: novosAnexos };
+      }
+      return doc;
+    });
+
+    this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
+    this.toastService.show('Anexo excluído com sucesso.', 'success');
+    void this.carregarUrlsAnexos();
+  }
+
+  async processarAnexoDocumento(docId: string, files: FileList | null): Promise<void> {
+    console.log(`processarAnexoDocumento disparado para o documento ${docId}. Quantidade de arquivos: ${files?.length ?? 0}`); // Prova de evento 0.4
+    if (!files || files.length === 0) return;
+
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const novosAnexosMetadados: Anexo[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const id = crypto.randomUUID();
+
+      // Salvar o blob
+      await this.dbService.saveAnexoBlob({
+        id,
+        blob: file,
+        mimeType: file.type
+      });
+
+      const anexo: Anexo = {
+        id,
+        nome: file.name,
+        tipo: file.type,
+        tamanho: file.size,
+        dataUpload: new Date().toISOString()
+      };
+
+      novosAnexosMetadados.push(anexo);
+    }
+
+    const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
+      if (doc.id === docId) {
+        return {
+          ...doc,
+          anexos: [...doc.anexos, ...novosAnexosMetadados]
+        };
+      }
+      return doc;
+    });
+
+    this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
+    this.toastService.show(`${novosAnexosMetadados.length} anexo(s) adicionado(s) com sucesso.`, 'success');
+    void this.carregarUrlsAnexos();
+  }
+
+  formatarBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 }

@@ -12,6 +12,12 @@ export interface Evidencia {
   id_item: string;       // a qual ChecklistItem pertence
 }
 
+export interface AnexoBlob {
+  id: string;        // === Anexo.id
+  blob: Blob;        // arquivo bruto (imagem ou documento)
+  mimeType: string;  // === Anexo.tipo
+}
+
 interface Predial4DB extends DBSchema {
   vistorias: {
     key: string;      // Vistoria.id
@@ -21,10 +27,14 @@ interface Predial4DB extends DBSchema {
     key: string;      // Evidencia.id
     value: Evidencia;
   };
+  anexos: {
+    key: string;       // AnexoBlob.id
+    value: AnexoBlob;
+  };
 }
 
 const DB_NAME = 'predial4-db';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 @Injectable({ providedIn: 'root' })
 export class VistoriaDbService {
@@ -57,6 +67,9 @@ export class VistoriaDbService {
           if (db.objectStoreNames.contains('anexos_reforma')) {
             db.deleteObjectStore('anexos_reforma');
           }
+        }
+        if (oldVersion < 6) {
+          db.createObjectStore('anexos', { keyPath: 'id' });
         }
       },
     });
@@ -91,6 +104,21 @@ export class VistoriaDbService {
   async deleteEvidencia(id: string): Promise<void> {
     const db = await this.dbPromise;
     await db.delete('evidencias', id);
+  }
+
+  async saveAnexoBlob(a: AnexoBlob): Promise<void> {
+    const db = await this.dbPromise;
+    await db.put('anexos', a);
+  }
+
+  async getAnexoBlob(id: string): Promise<AnexoBlob | undefined> {
+    const db = await this.dbPromise;
+    return db.get('anexos', id);
+  }
+
+  async deleteAnexoBlob(id: string): Promise<void> {
+    const db = await this.dbPromise;
+    await db.delete('anexos', id);
   }
 
   async count(): Promise<number> {

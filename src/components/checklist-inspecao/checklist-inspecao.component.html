@@ -701,6 +701,10 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
               <span>Pausar</span>
             </button>
+            <button (click)="navegarParaNorteadores()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-sky-100 active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <span>Doc. Norteadores</span>
+            </button>
             <button (click)="exportarRelatorioPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-sm active:scale-95">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
               <span>Gerar Relatório</span>
@@ -1469,3 +1473,163 @@
     </div>
   </div>
 }
+
+  <!-- MODO 4: DOCUMENTOS NORTEADORES (ANEXO I) -->
+  @if (modoExibicao() === 'NORTEADORES' && vistoriaAtiva()) {
+    <div class="space-y-6">
+      <!-- Cabeçalho de Navegação -->
+      <div class="bg-white rounded-xl shadow-lg p-5 border border-slate-200 sticky top-0 z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-sky-100 text-sky-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-1 inline-block">
+            Anexo I
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Documentos Norteadores</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Vistoria: {{ vistoriaAtiva()?.buildingName }} · Controle de documentação de referência</p>
+        </div>
+        <button (click)="voltarDeNorteadores()" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-slate-200 active:scale-95 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Voltar à Inspeção</span>
+        </button>
+      </div>
+
+      <!-- Área Principal -->
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">Lista de Documentos</h3>
+            <p class="text-xs text-slate-400">Registre os projetos, laudos, licenças e alvarás fornecidos.</p>
+          </div>
+          <button (click)="adicionarDocumentoNorteador()" class="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-2 rounded-lg text-xs transition-all shadow-sm cursor-pointer active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Adicionar Linha</span>
+          </button>
+        </div>
+
+        <div class="p-5">
+          @if (!vistoriaAtiva()?.documentosNorteadores || vistoriaAtiva()?.documentosNorteadores?.length === 0) {
+            <div class="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl space-y-3">
+              <div class="text-3xl">📂</div>
+              <div class="space-y-1">
+                <p class="text-slate-700 font-bold text-sm">Nenhum documento norteador registrado</p>
+                <p class="text-xs text-slate-400 max-w-sm mx-auto">Adicione linhas para registrar a listagem de documentos da vistoria e anexar seus respectivos arquivos.</p>
+              </div>
+              <button (click)="adicionarDocumentoNorteador()" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-2 rounded-lg text-xs border border-slate-200 transition-all cursor-pointer">
+                <span>Adicionar Primeiro Documento</span>
+              </button>
+            </div>
+          } @else {
+            <div class="space-y-4">
+              @for (doc of vistoriaAtiva()?.documentosNorteadores; track doc.id) {
+                <div class="p-4 rounded-xl border border-slate-200 hover:shadow-md transition-shadow bg-white space-y-4 relative">
+                  
+                  <!-- Grid de inputs principais -->
+                  <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                    
+                    <!-- Descrição/Nome do Documento -->
+                    <div class="md:col-span-6 space-y-1">
+                      <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Descrição do Documento</label>
+                      <input type="text" [value]="doc.descricao" 
+                             (input)="salvarDescricaoNorteador(doc.id, descInput.value)" #descInput
+                             placeholder="Ex: Projeto Arquitetônico As-Built, Alvará de Funcionamento, Laudo de SPDA..." 
+                             class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all">
+                    </div>
+
+                    <!-- Status de Disponibilidade -->
+                    <div class="md:col-span-3 space-y-1">
+                      <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</label>
+                      <select [value]="doc.status" 
+                              (change)="salvarStatusNorteador(doc.id, statusSelect.value)" #statusSelect
+                              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all cursor-pointer">
+                        <option value="PENDENTE">🔴 PENDENTE / COBRADO</option>
+                        <option value="DISPONIVEL">🟢 DISPONÍVEL</option>
+                        <option value="ANALISADO">🔵 ANALISADO</option>
+                        <option value="NAO_APLICAVEL">⚪ NÃO APLICÁVEL</option>
+                      </select>
+                    </div>
+
+                    <!-- Botão de Upload e Ações -->
+                    <div class="md:col-span-3 flex items-center justify-end gap-2 pt-5">
+                      <!-- Input File escondido -->
+                      <input type="file" multiple #fileAnexoInput class="hidden" 
+                             (change)="processarAnexoDocumento(doc.id, fileAnexoInput.files)">
+                      
+                      <button (click)="fileAnexoInput.click()" 
+                              class="flex-1 md:flex-none flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-lg text-xs border border-slate-200 transition-all cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        <span>Anexar</span>
+                      </button>
+
+                      <!-- Botão Excluir Linha com duplo clique -->
+                      <button (click)="solicitarExcluirNorteador(doc.id)"
+                              class="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border cursor-pointer"
+                              [class.bg-rose-50]="norteadorPendenteConfirmacaoExclusao() === doc.id"
+                              [class.border-rose-200]="norteadorPendenteConfirmacaoExclusao() === doc.id"
+                              [class.text-rose-700]="norteadorPendenteConfirmacaoExclusao() === doc.id"
+                              [class.bg-slate-50]="norteadorPendenteConfirmacaoExclusao() !== doc.id"
+                              [class.border-slate-200]="norteadorPendenteConfirmacaoExclusao() !== doc.id"
+                              [class.text-slate-500]="norteadorPendenteConfirmacaoExclusao() !== doc.id"
+                              [class.hover:bg-rose-100]="norteadorPendenteConfirmacaoExclusao() === doc.id"
+                              [class.hover:bg-slate-100]="norteadorPendenteConfirmacaoExclusao() !== doc.id">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        <span>{{ norteadorPendenteConfirmacaoExclusao() === doc.id ? 'Confirmar?' : 'Excluir' }}</span>
+                      </button>
+                    </div>
+
+                  </div>
+
+                  <!-- Seção de Anexos / Arquivos Anexados nesta linha -->
+                  @if (doc.anexos && doc.anexos.length > 0) {
+                    <div class="pt-3 border-t border-slate-100 space-y-2">
+                      <h4 class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Arquivos Anexados</h4>
+                      
+                      <div class="flex flex-wrap gap-2">
+                        @for (anexo of doc.anexos; track anexo.id) {
+                          <div class="flex items-center gap-2 p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100/70 transition-colors text-xs relative max-w-[280px]">
+                            
+                            <!-- Miniatura se imagem -->
+                            @if (anexo.tipo.startsWith('image/')) {
+                              <div class="w-10 h-10 rounded border border-slate-300 bg-slate-200 overflow-hidden flex-shrink-0">
+                                <img [src]="anexoUrls()[anexo.id]" alt="Anexo" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                              </div>
+                            } @else {
+                              <!-- Ícone de Documento se PDF/Outro -->
+                              <div class="w-10 h-10 rounded border border-slate-300 bg-sky-50 flex items-center justify-center text-sky-600 flex-shrink-0 font-mono text-[10px] font-bold">
+                                PDF
+                              </div>
+                            }
+
+                            <!-- Detalhes do Anexo -->
+                            <div class="min-w-0 pr-6">
+                              <p class="font-medium text-slate-800 truncate text-[11px]" [title]="anexo.nome">{{ anexo.nome }}</p>
+                              <p class="text-[9px] text-slate-400 font-mono">{{ formatarBytes(anexo.tamanho) }}</p>
+                            </div>
+
+                            <!-- Botão de Deletar Anexo Individual por duplo clique -->
+                            <button (click)="solicitarExcluirAnexo(doc.id, anexo.id)"
+                                    class="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-md border text-[10px] font-bold transition-all cursor-pointer"
+                                    [class.bg-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                                    [class.border-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                                    [class.text-white]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                                    [class.bg-white]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                                    [class.border-slate-200]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                                    [class.text-slate-400]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                                    [class.hover:text-rose-600]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                                    [title]="anexoPendenteConfirmacaoExclusao() === anexo.id ? 'Clique novamente para confirmar a exclusão' : 'Excluir anexo'">
+                              ✕
+                            </button>
+
+                          </div>
+                        }
+                      </div>
+
+                    </div>
+                  }
+
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
