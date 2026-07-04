@@ -1727,32 +1727,197 @@
         </div>
       </div>
 
-      <!-- Formulário de Constatações e Detalhes -->
-      <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-        <div class="p-5 border-b border-slate-100 bg-slate-50/50">
-          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
-            Constatações Gerais
-          </h3>
-          <p class="text-xs text-slate-400 mt-1">Insira relatos de ocupantes, histórico da edificação, intervenções ou reformas anteriores, e patologias recorrentes observadas de forma geral.</p>
+      <!-- Formulário de Nova Constatação -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Coluna da Esquerda: Formulário de Adição -->
+        <div class="lg:col-span-1 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col justify-between">
+          <div>
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+              <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nova Constatação
+              </h3>
+              <p class="text-xs text-slate-400 mt-1">Selecione o tipo e preencha os campos obrigatórios (*).</p>
+            </div>
+
+            <div class="p-5 space-y-4">
+              <!-- Tipo -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Tipo de Constatação *</label>
+                <select [value]="novaConstatacaoTipo()"
+                        (change)="novaConstatacaoTipo.set($any($event.target).value)"
+                        class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
+                  <option value="RELATO_OCUPANTE">Relato de ocupante</option>
+                  <option value="HISTORICO">Histórico da edificação</option>
+                  <option value="INTERVENCAO">Intervenção / reforma anterior</option>
+                  <option value="PATOLOGIA_RECORRENTE">Patologia recorrente observada</option>
+                  <option value="OUTROS">Outros</option>
+                </select>
+              </div>
+
+              <!-- Descrição principal -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">
+                  {{ metaConstatacao(novaConstatacaoTipo()).labelPrincipal }} *
+                </label>
+                <textarea [value]="novaConstatacaoDescricao()"
+                          (input)="novaConstatacaoDescricao.set($any($event.target).value)"
+                          rows="4"
+                          class="w-full rounded-lg border border-slate-200 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all shadow-inner bg-slate-50/30"
+                          [placeholder]="metaConstatacao(novaConstatacaoTipo()).placeholderPrincipal"></textarea>
+              </div>
+
+              <!-- Campos Condicionais: RELATO_OCUPANTE -->
+              @if (novaConstatacaoTipo() === 'RELATO_OCUPANTE') {
+                <div class="space-y-3 pt-1 border-t border-slate-100">
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600 block">Nome do Ocupante *</label>
+                    <input type="text"
+                           [value]="novaConstatacaoNome()"
+                           (input)="novaConstatacaoNome.set($any($event.target).value)"
+                           placeholder="Ex.: Sr. João Carlos"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600 block">Identificação / Vínculo / Unidade *</label>
+                    <input type="text"
+                           [value]="novaConstatacaoIdentificacao()"
+                           (input)="novaConstatacaoIdentificacao.set($any($event.target).value)"
+                           placeholder="Ex.: Síndico, zelador, apto 302..."
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
+                  </div>
+                </div>
+              }
+
+              <!-- Campos Condicionais: HISTORICO / INTERVENCAO -->
+              @if (novaConstatacaoTipo() === 'HISTORICO' || novaConstatacaoTipo() === 'INTERVENCAO') {
+                <div class="space-y-3 pt-1 border-t border-slate-100">
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600 block">Data / Período *</label>
+                    <input type="text"
+                           [value]="novaConstatacaoData()"
+                           (input)="novaConstatacaoData.set($any($event.target).value)"
+                           [placeholder]="novaConstatacaoTipo() === 'INTERVENCAO' ? 'Ex.: Dezembro de 2021' : 'Ex.: Meados de 2008, década de 90...'"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
+                  </div>
+                </div>
+              }
+
+              <!-- Campos Condicionais: PATOLOGIA_RECORRENTE -->
+              @if (novaConstatacaoTipo() === 'PATOLOGIA_RECORRENTE') {
+                <div class="space-y-3 pt-1 border-t border-slate-100">
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600 block">Quem relatou / Como foi verificada *</label>
+                    <input type="text"
+                           [value]="novaConstatacaoFonte()"
+                           (input)="novaConstatacaoFonte.set($any($event.target).value)"
+                           placeholder="Ex.: Relato de moradores do bloco B / Vistoriado no local"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="p-5 border-t border-slate-100 bg-slate-50/50">
+            <button (click)="adicionarConstatacao()"
+                    class="w-full inline-flex items-center justify-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition-all shadow-sm cursor-pointer active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Adicionar Constatação</span>
+            </button>
+          </div>
         </div>
 
-        <div class="p-5">
-          <!-- Reatividade: TextArea padrão 2c: blur-triggered saving -->
-          <textarea #constatacoesInput
-                    [value]="vistoriaAtiva()?.anamnese?.constatacoes || ''"
-                    (blur)="salvarConstatacoesAnamnese(constatacoesInput.value)"
-                    rows="8"
-                    class="w-full rounded-lg border border-slate-200 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all shadow-inner bg-slate-50/30"
-                    placeholder="Exemplo: De acordo com relato do síndico, houve uma impermeabilização na laje de cobertura há 5 anos. Há infiltrações recorrentes no subsolo durante períodos de chuvas fortes..."></textarea>
-          
-          <div class="flex justify-end mt-1.5">
-            <span class="text-[10px] text-slate-400 font-medium italic flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Salva automaticamente ao sair do campo
-            </span>
+        <!-- Coluna da Direita: Lista de Constatações Adicionadas -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+              </svg>
+              Lista de Constatações Adicionadas ({{ constatacoesLista().length }})
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Registros individuais de anamnese associados a esta vistoria.</p>
+          </div>
+
+          <div class="p-5 flex-1 overflow-y-auto max-h-[600px] space-y-4">
+            @if (constatacoesLista().length === 0) {
+              <div class="text-center py-16 text-slate-400">
+                <div class="text-4xl mb-2">📋</div>
+                <p class="text-xs font-bold text-slate-500">Nenhuma constatação registrada para esta anamnese</p>
+                <p class="text-[10px] text-slate-400 max-w-sm mx-auto mt-1">Utilize o formulário ao lado para cadastrar relatos, históricos de reformas e patologias recorrentes.</p>
+              </div>
+            } @else {
+              <div class="space-y-3">
+                @for (c of constatacoesLista(); track c.id) {
+                  <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/75 transition-all relative group flex flex-col justify-between gap-3">
+                    <div class="space-y-2">
+                      <!-- Tag do Tipo -->
+                      <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                              [class.bg-blue-100]="c.tipo === 'RELATO_OCUPANTE'"
+                              [class.text-blue-800]="c.tipo === 'RELATO_OCUPANTE'"
+                              [class.bg-purple-100]="c.tipo === 'HISTORICO'"
+                              [class.text-purple-800]="c.tipo === 'HISTORICO'"
+                              [class.bg-amber-100]="c.tipo === 'INTERVENCAO'"
+                              [class.text-amber-800]="c.tipo === 'INTERVENCAO'"
+                              [class.bg-rose-100]="c.tipo === 'PATOLOGIA_RECORRENTE'"
+                              [class.text-rose-800]="c.tipo === 'PATOLOGIA_RECORRENTE'"
+                              [class.bg-slate-200]="c.tipo === 'OUTROS'"
+                              [class.text-slate-800]="c.tipo === 'OUTROS'">
+                          {{ metaConstatacao(c.tipo).rotulo }}
+                        </span>
+                        
+                        <!-- Botão de Deletar com Duplo Clique/Confirmação -->
+                        <button (click)="solicitarExcluirConstatacao(c.id)"
+                                class="w-6 h-6 flex items-center justify-center rounded-lg border text-xs font-bold transition-all cursor-pointer"
+                                [class.bg-rose-600]="constatacaoPendenteConfirmacaoExclusao() === c.id"
+                                [class.border-rose-600]="constatacaoPendenteConfirmacaoExclusao() === c.id"
+                                [class.text-white]="constatacaoPendenteConfirmacaoExclusao() === c.id"
+                                [class.bg-white]="constatacaoPendenteConfirmacaoExclusao() !== c.id"
+                                [class.border-slate-200]="constatacaoPendenteConfirmacaoExclusao() !== c.id"
+                                [class.text-slate-400]="constatacaoPendenteConfirmacaoExclusao() !== c.id"
+                                [class.hover:text-rose-600]="constatacaoPendenteConfirmacaoExclusao() !== c.id"
+                                [title]="constatacaoPendenteConfirmacaoExclusao() === c.id ? 'Clique novamente para confirmar a exclusão' : 'Excluir constatação'">
+                          ✕
+                        </button>
+                      </div>
+
+                      <!-- Texto da Constatação -->
+                      <p class="text-sm font-medium text-slate-800 whitespace-pre-line leading-relaxed">
+                        {{ c.descricao }}
+                      </p>
+                    </div>
+
+                    <!-- Campos Condicionais Detalhados -->
+                    @if (c.tipo === 'RELATO_OCUPANTE' || c.tipo === 'HISTORICO' || c.tipo === 'INTERVENCAO' || c.tipo === 'PATOLOGIA_RECORRENTE') {
+                      <div class="flex flex-wrap gap-x-4 gap-y-1 pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 font-medium">
+                        @if (c.tipo === 'RELATO_OCUPANTE') {
+                          <span class="flex items-center gap-1 text-blue-700 bg-blue-50/50 px-2 py-0.5 rounded border border-blue-100">
+                            <strong>Ocupante:</strong> {{ c.nomeOcupante }}
+                          </span>
+                          <span class="flex items-center gap-1 text-slate-600 bg-slate-100/50 px-2 py-0.5 rounded border border-slate-200">
+                            <strong>Vínculo:</strong> {{ c.identificacao }}
+                          </span>
+                        }
+                        @if (c.tipo === 'HISTORICO' || c.tipo === 'INTERVENCAO') {
+                          <span class="flex items-center gap-1 text-amber-700 bg-amber-50/50 px-2 py-0.5 rounded border border-amber-100">
+                            <strong>Data/Período:</strong> {{ c.data }}
+                          </span>
+                        }
+                        @if (c.tipo === 'PATOLOGIA_RECORRENTE') {
+                          <span class="flex items-center gap-1 text-rose-700 bg-rose-50/50 px-2 py-0.5 rounded border border-rose-100">
+                            <strong>Verificação/Relato:</strong> {{ c.fonteRelato }}
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
           </div>
         </div>
       </div>

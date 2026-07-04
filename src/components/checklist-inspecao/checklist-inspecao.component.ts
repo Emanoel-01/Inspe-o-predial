@@ -71,8 +71,21 @@ export interface DocumentoNorteador {
   anexos: Anexo[];                            // metadados; blobs no store
 }
 
+export type TipoConstatacao = 'RELATO_OCUPANTE' | 'HISTORICO' | 'INTERVENCAO' | 'PATOLOGIA_RECORRENTE' | 'OUTROS';
+
+export interface Constatacao {
+  id: string;
+  tipo: TipoConstatacao;
+  descricao: string;          // texto principal (rótulo adapta por tipo)
+  nomeOcupante?: string;      // RELATO_OCUPANTE (obrig.)
+  identificacao?: string;     // RELATO_OCUPANTE (obrig.) — vínculo/unidade
+  data?: string;              // HISTORICO (obrig.), INTERVENCAO (obrig.)
+  fonteRelato?: string;       // PATOLOGIA_RECORRENTE (obrig.) — quem relatou / como foi verificada
+  dateCreated: string;
+}
+
 export interface Anamnese {
-  constatacoes: string;
+  constatacoes: Constatacao[];
   anexos: Anexo[];
 }
 
@@ -128,6 +141,14 @@ const SCHEMA_ANALISE_EVIDENCIA = {
     criticidadeSugerida: { type: Type.STRING, enum: ['P1', 'P2', 'P3'] },
   },
   required: ['texto', 'severitySugerida', 'correlacaoFotoPatologia'],
+};
+
+const CONSTATACAO_META: Record<TipoConstatacao, { rotulo: string; labelPrincipal: string; placeholderPrincipal: string }> = {
+  RELATO_OCUPANTE:      { rotulo: 'Relato de ocupante',              labelPrincipal: 'Relato',                    placeholderPrincipal: 'O que foi relatado…' },
+  HISTORICO:            { rotulo: 'Histórico da edificação',         labelPrincipal: 'Histórico',                 placeholderPrincipal: 'Ex.: edificação construída em meados de 2008…' },
+  INTERVENCAO:          { rotulo: 'Intervenção / reforma anterior',  labelPrincipal: 'Detalhes da intervenção',   placeholderPrincipal: 'O que foi feito, em qual sistema…' },
+  PATOLOGIA_RECORRENTE: { rotulo: 'Patologia recorrente observada',  labelPrincipal: 'Patologia observada',       placeholderPrincipal: 'Manifestação recorrente relatada…' },
+  OUTROS:               { rotulo: 'Outros',                          labelPrincipal: 'Constatação',               placeholderPrincipal: 'Descreva a constatação…' },
 };
 
 const METODOLOGIA_NIVEL: Record<'1' | '2' | '3', string> = {
@@ -484,6 +505,24 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   // Filtros de visualização
   filtroStatus = signal<'TODOS' | 'PENDENTE' | 'PASS' | 'FAIL' | 'NA'>('TODOS');
   filtroSistema = signal<string>('TODOS');
+
+  // Anamnese guided form signals & computed
+  novaConstatacaoTipo = signal<TipoConstatacao>('RELATO_OCUPANTE');
+  novaConstatacaoDescricao = signal('');
+  novaConstatacaoNome = signal('');
+  novaConstatacaoIdentificacao = signal('');
+  novaConstatacaoData = signal('');
+  novaConstatacaoFonte = signal('');
+  constatacaoPendenteConfirmacaoExclusao = signal<string | null>(null);
+
+  metaConstatacao(t: TipoConstatacao) {
+    return CONSTATACAO_META[t];
+  }
+
+  constatacoesLista = computed<Constatacao[]>(() => {
+    const c = this.vistoriaAtiva()?.anamnese?.constatacoes;
+    return Array.isArray(c) ? c : [];
+  });
 
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
   modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE'>('LISTA');
@@ -2840,7 +2879,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     console.log('navegarParaAnamnese disparado'); // prova de evento 0.4
     if (!ativa.anamnese) {
       this.atualizarVistoriaAtiva({
-        anamnese: { constatacoes: '', anexos: [] }
+        anamnese: { constatacoes: [], anexos: [] }
       });
     }
     this.modoExibicao.set('ANAMNESE');
@@ -2863,8 +2902,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       await this.dbService.saveAnexoBlob({ id, blob: file, mimeType: file.type });
       novos.push({ id, nome: file.name, tipo: file.type, tamanho: file.size, dataUpload: new Date().toISOString() });
     }
-    const base = ativa.anamnese ?? { constatacoes: '', anexos: [] };
-    this.atualizarVistoriaAtiva({ anamnese: { ...base, anexos: [...base.anexos, ...novos] } });
+    const base = ativa.anamnese ?? { constatacoes: [], anexos: [] };
+    const listaAtual = Array.isArray(base.constatacoes) ? base.constatacoes : [];
+    this.atualizarVistoriaAtiva({ anamnese: { ...base, constatacoes: listaAtual, anexos: [...base.anexos, ...novos] } });
     void this.carregarUrlsAnexos();
   }
 
@@ -2885,17 +2925,77 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   private async excluirAnexoAnamnese(anexoId: string): Promise<void> {
     const ativa = this.vistoriaAtiva(); if (!ativa) return;
     await this.dbService.deleteAnexoBlob(anexoId);
-    const base = ativa.anamnese ?? { constatacoes: '', anexos: [] };
-    this.atualizarVistoriaAtiva({ anamnese: { ...base, anexos: base.anexos.filter(a => a.id !== anexoId) } });
+    const base = ativa.anamnese ?? { constatacoes: [], anexos: [] };
+    const listaAtual = Array.isArray(base.constatacoes) ? base.constatacoes : [];
+    this.atualizarVistoriaAtiva({ anamnese: { ...base, constatacoes: listaAtual, anexos: base.anexos.filter(a => a.id !== anexoId) } });
     this.toastService.show('Anexo excluído com sucesso.', 'success');
     void this.carregarUrlsAnexos();
   }
 
-  salvarConstatacoesAnamnese(texto: string): void {
-    console.log(`salvarConstatacoesAnamnese disparado: ${texto.substring(0, 30)}...`); // prova de evento 0.4
+  limparRascunhoConstatacao(): void {
+    this.novaConstatacaoDescricao.set('');
+    this.novaConstatacaoNome.set('');
+    this.novaConstatacaoIdentificacao.set('');
+    this.novaConstatacaoData.set('');
+    this.novaConstatacaoFonte.set('');
+  }
+
+  adicionarConstatacao(): void {
+    console.log('adicionarConstatacao disparado'); // prova 0.4
     const ativa = this.vistoriaAtiva(); if (!ativa) return;
-    const base = ativa.anamnese ?? { constatacoes: '', anexos: [] };
-    this.atualizarVistoriaAtiva({ anamnese: { ...base, constatacoes: texto } });
+    const tipo = this.novaConstatacaoTipo();
+    const descricao = this.novaConstatacaoDescricao().trim();
+
+    if (!descricao) { this.toastService.show('Preencha o campo principal da constatação.', 'error'); return; }
+    if (tipo === 'RELATO_OCUPANTE') {
+      if (!this.novaConstatacaoNome().trim())          { this.toastService.show('Informe o nome do ocupante.', 'error'); return; }
+      if (!this.novaConstatacaoIdentificacao().trim()) { this.toastService.show('Informe a identificação / vínculo do ocupante.', 'error'); return; }
+    }
+    if ((tipo === 'HISTORICO' || tipo === 'INTERVENCAO') && !this.novaConstatacaoData().trim()) {
+      this.toastService.show('Informe a data / período.', 'error'); return;
+    }
+    if (tipo === 'PATOLOGIA_RECORRENTE' && !this.novaConstatacaoFonte().trim()) {
+      this.toastService.show('Informe quem relatou / como foi verificada.', 'error'); return;
+    }
+
+    const nova: Constatacao = {
+      id: crypto.randomUUID(),
+      tipo,
+      descricao,
+      nomeOcupante:   tipo === 'RELATO_OCUPANTE' ? this.novaConstatacaoNome().trim() : undefined,
+      identificacao:  tipo === 'RELATO_OCUPANTE' ? this.novaConstatacaoIdentificacao().trim() : undefined,
+      data:           (tipo === 'HISTORICO' || tipo === 'INTERVENCAO') ? this.novaConstatacaoData().trim() : undefined,
+      fonteRelato:    tipo === 'PATOLOGIA_RECORRENTE' ? this.novaConstatacaoFonte().trim() : undefined,
+      dateCreated: new Date().toISOString(),
+    };
+
+    const base = ativa.anamnese ?? { constatacoes: [], anexos: [] };
+    const listaAtual = Array.isArray(base.constatacoes) ? base.constatacoes : [];
+    this.atualizarVistoriaAtiva({ anamnese: { ...base, constatacoes: [...listaAtual, nova] } });
+    this.limparRascunhoConstatacao();
+    this.toastService.show('Constatação adicionada.', 'success');
+  }
+
+  solicitarExcluirConstatacao(id: string): void {
+    console.log(`solicitarExcluirConstatacao: ${id}`); // prova 0.4
+    if (this.constatacaoPendenteConfirmacaoExclusao() === id) {
+      this.excluirConstatacao(id);
+      this.constatacaoPendenteConfirmacaoExclusao.set(null);
+    } else {
+      this.constatacaoPendenteConfirmacaoExclusao.set(id);
+      this.toastService.show('Clique novamente para confirmar a exclusão.', 'info');
+      setTimeout(() => {
+        if (this.constatacaoPendenteConfirmacaoExclusao() === id) this.constatacaoPendenteConfirmacaoExclusao.set(null);
+      }, 3000);
+    }
+  }
+
+  private excluirConstatacao(id: string): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    const base = ativa.anamnese ?? { constatacoes: [], anexos: [] };
+    const listaAtual = Array.isArray(base.constatacoes) ? base.constatacoes : [];
+    this.atualizarVistoriaAtiva({ anamnese: { ...base, constatacoes: listaAtual.filter(c => c.id !== id) } });
+    this.toastService.show('Constatação excluída.', 'success');
   }
 
   adicionarDocumentoNorteador(): void {
