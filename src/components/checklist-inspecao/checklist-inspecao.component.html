@@ -2092,7 +2092,7 @@
         <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-200 space-y-4">
           <div class="border-b border-slate-100 pb-3">
             <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <mat-icon class="text-sky-600">domain</mat-icon>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
               <span>Dados da Edificação</span>
             </h3>
             <p class="text-slate-400 text-xs mt-0.5">Informações cadastradas no momento da emissão</p>
@@ -2173,10 +2173,10 @@
         <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-200 space-y-4">
           <div class="border-b border-slate-100 pb-3">
             <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <mat-icon class="text-sky-600">badge</mat-icon>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h3M15 12h3M6 16h12"/></svg>
               <span>Responsável Técnico & Empresa</span>
             </h3>
-            <p class="text-slate-400 text-xs mt-0.5">Perfil profissional em vigor no momento da emissão</p>
+            <p class="text-slate-400 text-xs mt-0.5">Perfil profissional in vigor no momento da emissão</p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -2223,25 +2223,25 @@
                 <div class="flex flex-wrap gap-2">
                   @if (laudo.snapshotProfile.companyPhone) {
                     <a [href]="'tel:' + normalizarTel(laudo.snapshotProfile.companyPhone)" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
-                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">phone</mat-icon>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                       <span>Ligar</span>
                     </a>
                   }
                   @if (laudo.snapshotProfile.companyEmail) {
                     <a [href]="'mailto:' + laudo.snapshotProfile.companyEmail" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
-                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">email</mat-icon>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                       <span>E-mail</span>
                     </a>
                   }
                   @if (laudo.snapshotProfile.companySite) {
                     <a [href]="normalizarUrl(laudo.snapshotProfile.companySite)" target="_blank" referrerpolicy="no-referrer" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
-                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">language</mat-icon>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                       <span>Website</span>
                     </a>
                   }
                   @if (laudo.snapshotProfile.socialNetworkLabel && laudo.snapshotProfile.socialNetworkUrl) {
                     <a [href]="normalizarUrl(laudo.snapshotProfile.socialNetworkUrl)" target="_blank" referrerpolicy="no-referrer" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
-                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">share</mat-icon>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
                       <span>{{ laudo.snapshotProfile.socialNetworkLabel }}</span>
                     </a>
                   }
@@ -2257,7 +2257,7 @@
         <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
           <div>
             <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <mat-icon class="text-sky-600">analytics</mat-icon>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
               <span>Síntese da Inspeção</span>
             </h3>
             <p class="text-slate-400 text-xs mt-0.5">Indicadores consolidados no momento do fechamento</p>
