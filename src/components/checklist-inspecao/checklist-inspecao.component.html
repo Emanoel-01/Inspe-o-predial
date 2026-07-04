@@ -967,9 +967,22 @@
                                 </div>
                                 <div class="space-y-1">
                                   <label class="block text-[9px] font-bold uppercase text-slate-500">Subtipo</label>
-                                  <input #classSubtipoInput [value]="f.classificacao?.subtipo || ''"
-                                         placeholder="Ex: Funcional, Endógena"
-                                         class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                  <select #classSubtipoInput
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                    <option value="" [selected]="!f.classificacao?.subtipo">Selecione…</option>
+                                    <optgroup label="Anomalia">
+                                      <option value="endogena" [selected]="f.classificacao?.subtipo === 'endogena'">Endógena</option>
+                                      <option value="exogena" [selected]="f.classificacao?.subtipo === 'exogena'">Exógena</option>
+                                      <option value="natural" [selected]="f.classificacao?.subtipo === 'natural'">Natural</option>
+                                      <option value="funcional" [selected]="f.classificacao?.subtipo === 'funcional'">Funcional</option>
+                                    </optgroup>
+                                    <optgroup label="Falha">
+                                      <option value="planejamento" [selected]="f.classificacao?.subtipo === 'planejamento'">Planejamento</option>
+                                      <option value="execucao" [selected]="f.classificacao?.subtipo === 'execucao'">Execução</option>
+                                      <option value="operacional" [selected]="f.classificacao?.subtipo === 'operacional'">Operacional</option>
+                                      <option value="gerencial" [selected]="f.classificacao?.subtipo === 'gerencial'">Gerencial</option>
+                                    </optgroup>
+                                  </select>
                                 </div>
                               </div>
 
