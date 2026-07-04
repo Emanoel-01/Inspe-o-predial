@@ -128,6 +128,17 @@ export interface Vistoria {
   anamnese?: Anamnese;
 }
 
+export interface LaudoEmitido {
+  id: string;                  // crypto.randomUUID()
+  numeroEmissao: number;       // sequencial global (contagem do store no momento da emissão + 1)
+  vistoriaId: string;          // referência informativa à vistoria de origem — NÃO usar para editar
+  buildingName: string;
+  address: string;
+  dataEmissao: string;         // ISO — timestamp exato da emissão
+  snapshotVistoria: Vistoria;  // cópia profunda e congelada da vistoria completa no momento da emissão
+  snapshotProfile: UserProfile;// cópia profunda e congelada do perfil do RT no momento da emissão
+}
+
 const SCHEMA_ANALISE_EVIDENCIA = {
   type: Type.OBJECT,
   properties: {
@@ -213,6 +224,8 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
 
   // Vistorias salvas
   vistorias = signal<Vistoria[]>([]);
+  laudosEmitidos = signal<LaudoEmitido[]>([]);
+  carregandoLaudos = signal(true);
   vistoriaAtiva = signal<Vistoria | null>(null);
   vistoriaParaExcluir = signal<Vistoria | null>(null);
 
@@ -621,6 +634,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     void this.carregarVistorias();
     this.carregarPerfilDoLocalStorage();
+    void this.carregarLaudosEmitidos();
   }
 
   ngOnDestroy(): void {
@@ -1685,6 +1699,27 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       return;
     }
     novaJanela.document.write('<html><body style="font-family:sans-serif;padding:20px">Gerando relatório, aguarde…</body></html>');
+
+    // Registro imutável da emissão — snapshot congelado, nunca editado depois
+    console.log('Emissão de laudo disparada — criando snapshot imutável.'); // prova de evento 0.4
+    try {
+      const numeroEmissao = (await this.dbService.countLaudosEmitidos()) + 1;
+      const novoLaudo: LaudoEmitido = {
+        id: crypto.randomUUID(),
+        numeroEmissao,
+        vistoriaId: ativa.id,
+        buildingName: ativa.buildingName,
+        address: ativa.address,
+        dataEmissao: new Date().toISOString(),
+        snapshotVistoria: JSON.parse(JSON.stringify(ativa)),
+        snapshotProfile: JSON.parse(JSON.stringify(profile)),
+      };
+      await this.dbService.salvarLaudoEmitido(novoLaudo);
+      void this.carregarLaudosEmitidos();
+    } catch (e) {
+      console.error('Falha ao registrar emissão do laudo (o PDF ainda será gerado normalmente):', e);
+      // Falha no registro NÃO deve impedir a geração do PDF em si.
+    }
 
     // Pré-carregar evidências como data URL base64
     const evidenciasMap = new Map<string, { dataUrl: string; geo: any; timestamp: string; tipo: string }>();
@@ -3567,6 +3602,32 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
     this.toastService.show(`${novosAnexosMetadados.length} anexo(s) adicionado(s) com sucesso.`, 'success');
     void this.carregarUrlsAnexos();
+  }
+
+  async carregarLaudosEmitidos(): Promise<void> {
+    this.carregandoLaudos.set(true);
+    try {
+      const lista = await this.dbService.getAllLaudosEmitidos();
+      lista.sort((a, b) => b.numeroEmissao - a.numeroEmissao); // mais recente primeiro
+      this.laudosEmitidos.set(lista);
+    } finally {
+      this.carregandoLaudos.set(false);
+    }
+  }
+
+  formatarDataEmissao(dataIso: string): string {
+    if (!dataIso) return '';
+    try {
+      return new Date(dataIso).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dataIso;
+    }
   }
 
   private normalizarUrl(url?: string): string {

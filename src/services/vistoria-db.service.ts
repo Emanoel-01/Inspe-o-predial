@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { Vistoria } from '../components/checklist-inspecao/checklist-inspecao.component';
+import { Vistoria, LaudoEmitido } from '../components/checklist-inspecao/checklist-inspecao.component';
 
 export interface Evidencia {
   id: string;            // uuid gerado na captura
@@ -31,10 +31,14 @@ interface Predial4DB extends DBSchema {
     key: string;       // AnexoBlob.id
     value: AnexoBlob;
   };
+  laudosEmitidos: {
+    key: string;       // LaudoEmitido.id
+    value: LaudoEmitido;
+  };
 }
 
 const DB_NAME = 'predial4-db';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 @Injectable({ providedIn: 'root' })
 export class VistoriaDbService {
@@ -71,8 +75,26 @@ export class VistoriaDbService {
         if (oldVersion < 6) {
           db.createObjectStore('anexos', { keyPath: 'id' });
         }
+        if (oldVersion < 7) {
+          db.createObjectStore('laudosEmitidos', { keyPath: 'id' });
+        }
       },
     });
+  }
+
+  async salvarLaudoEmitido(laudo: LaudoEmitido): Promise<void> {
+    const db = await this.dbPromise;
+    await db.put('laudosEmitidos', laudo);
+  }
+
+  async getAllLaudosEmitidos(): Promise<LaudoEmitido[]> {
+    const db = await this.dbPromise;
+    return db.getAll('laudosEmitidos');
+  }
+
+  async countLaudosEmitidos(): Promise<number> {
+    const db = await this.dbPromise;
+    return db.count('laudosEmitidos');
   }
 
   async getAllVistorias(): Promise<Vistoria[]> {
