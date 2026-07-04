@@ -540,8 +540,9 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   });
 
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
-  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE'>('LISTA');
+  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO'>('LISTA');
   vistoriaEmEdicao = signal<Vistoria | null>(null);
+  laudoSelecionado = signal<LaudoEmitido | null>(null);
 
   // Carregar os sistemas organizados da base de dados estática
   sistemasDisponiveis = computed(() => {
@@ -603,33 +604,25 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
     });
   });
 
-  // Estatísticas de conformidade da vistoria ativa
-  estatisticasAtivas = computed(() => {
-    const ativa = this.vistoriaAtiva();
-    if (!ativa) return { total: 0, avaliados: 0, conformes: 0, naoConformes: 0, naoAplicaveis: 0, pendentes: 0, percentualConclusao: 0, taxaConformidade: 0 };
+  calcularEstatisticas(vistoria: Vistoria | null) {
+    if (!vistoria) return { total: 0, avaliados: 0, conformes: 0, naoConformes: 0, naoAplicaveis: 0, pendentes: 0, percentualConclusao: 0, taxaConformidade: 0 };
 
-    const total = ativa.items.length;
-    const conformes = ativa.items.filter(i => i.status === 'PASS' || i.status === 'CONFORME').length;
-    const naoConformes = ativa.items.filter(i => i.status === 'FAIL' || i.status === 'NAO_CONFORME').length;
-    const naoAplicaveis = ativa.items.filter(i => i.status === 'NA' || i.status === 'NAO_APLICAVEL').length;
-    const pendentes = ativa.items.filter(i => i.status === 'PENDENTE').length;
+    const total = vistoria.items.length;
+    const conformes = vistoria.items.filter(i => i.status === 'PASS' || i.status === 'CONFORME').length;
+    const naoConformes = vistoria.items.filter(i => i.status === 'FAIL' || i.status === 'NAO_CONFORME').length;
+    const naoAplicaveis = vistoria.items.filter(i => i.status === 'NA' || i.status === 'NAO_APLICAVEL').length;
+    const pendentes = vistoria.items.filter(i => i.status === 'PENDENTE').length;
     const avaliados = total - pendentes;
 
     const percentualConclusao = total > 0 ? Math.round((avaliados / total) * 100) : 0;
     const avaliadosComStatusReal = conformes + naoConformes;
     const taxaConformidade = avaliadosComStatusReal > 0 ? Math.round((conformes / avaliadosComStatusReal) * 100) : 0;
 
-    return {
-      total,
-      avaliados,
-      conformes,
-      naoConformes,
-      naoAplicaveis,
-      pendentes,
-      percentualConclusao,
-      taxaConformidade
-    };
-  });
+    return { total, avaliados, conformes, naoConformes, naoAplicaveis, pendentes, percentualConclusao, taxaConformidade };
+  }
+
+  // Estatísticas de conformidade da vistoria ativa
+  estatisticasAtivas = computed(() => this.calcularEstatisticas(this.vistoriaAtiva()));
 
   ngOnInit(): void {
     void this.carregarVistorias();
@@ -3615,6 +3608,17 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     }
   }
 
+  verDetalhesLaudo(laudo: LaudoEmitido): void {
+    console.log(`verDetalhesLaudo disparado: ${laudo.id}`); // prova de evento 0.4
+    this.laudoSelecionado.set(laudo);
+    this.modoExibicao.set('DETALHE_LAUDO');
+  }
+
+  voltarDeDetalheLaudo(): void {
+    this.laudoSelecionado.set(null);
+    this.modoExibicao.set('LISTA');
+  }
+
   formatarDataEmissao(dataIso: string): string {
     if (!dataIso) return '';
     try {
@@ -3630,12 +3634,12 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     }
   }
 
-  private normalizarUrl(url?: string): string {
+  normalizarUrl(url?: string): string {
     if (!url) return '';
     return /^https?:\/\//i.test(url) ? url : `https://${url}`;
   }
 
-  private normalizarTel(tel?: string): string {
+  normalizarTel(tel?: string): string {
     if (!tel) return '';
     return tel.replace(/[^\d+]/g, '');
   }

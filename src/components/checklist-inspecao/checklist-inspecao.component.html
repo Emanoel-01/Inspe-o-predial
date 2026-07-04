@@ -98,7 +98,7 @@
       } @else {
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           @for (laudo of laudosEmitidos(); track laudo.id) {
-            <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col gap-2">
+            <div (click)="verDetalhesLaudo(laudo)" class="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col gap-2 cursor-pointer hover:border-sky-400 hover:shadow-md transition-all">
               <div class="flex justify-between items-start gap-2">
                 <span class="font-bold text-slate-800 text-sm">Laudo Nº {{ laudo.numeroEmissao.toString().padStart(3, '0') }}</span>
                 <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
@@ -2058,5 +2058,270 @@
         </div>
       </div>
 
+    </div>
+  }
+
+  <!-- MODO: DETALHE_LAUDO (Ver Detalhes do Laudo Emitido) -->
+  @if (modoExibicao() === 'DETALHE_LAUDO' && laudoSelecionado()) {
+    @let laudo = laudoSelecionado()!;
+    @let stats = calcularEstatisticas(laudo.snapshotVistoria);
+
+    <div class="space-y-6">
+      <!-- Cabeçalho -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full mb-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Emitido — Registro Imutável
+            </span>
+            <h2 class="text-xl sm:text-2xl font-bold text-sky-955">
+              Laudo Nº {{ laudo.numeroEmissao.toString().padStart(3, '0') }} — {{ laudo.snapshotVistoria.buildingName }}
+            </h2>
+            <p class="text-slate-500 text-sm mt-1 font-medium">
+              Emitido em {{ formatarDataEmissao(laudo.dataEmissao) }}
+            </p>
+          </div>
+          <button (click)="voltarDeDetalheLaudo()" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-slate-200 cursor-pointer active:scale-95">
+            ← Voltar
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Card 1: Dados da Edificação -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-200 space-y-4">
+          <div class="border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <mat-icon class="text-sky-600">domain</mat-icon>
+              <span>Dados da Edificação</span>
+            </h3>
+            <p class="text-slate-400 text-xs mt-0.5">Informações cadastradas no momento da emissão</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="sm:col-span-2 bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+              <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Nome do Edifício</span>
+              <span class="text-slate-800 font-bold text-sm">{{ laudo.snapshotVistoria.buildingName }}</span>
+            </div>
+
+            <div class="sm:col-span-2 bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+              <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Endereço</span>
+              <span class="text-slate-800 font-medium">{{ laudo.snapshotVistoria.address }}</span>
+            </div>
+
+            @if (laudo.snapshotVistoria.tipoUso) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Uso Predominante</span>
+                <span class="text-slate-800 font-semibold">{{ laudo.snapshotVistoria.tipoUso }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotVistoria.areaConstruida) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Área Construída</span>
+                <span class="text-slate-800 font-semibold">{{ laudo.snapshotVistoria.areaConstruida }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotVistoria.idadeEdificacao) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Idade da Edificação</span>
+                <span class="text-slate-800 font-semibold">{{ laudo.snapshotVistoria.idadeEdificacao }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotVistoria.padraoAcabamento) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Padrão de Acabamento</span>
+                <span class="text-slate-800 font-semibold">{{ laudo.snapshotVistoria.padraoAcabamento }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotVistoria.numeroPavimentos) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Número de Pavimentos</span>
+                <span class="text-slate-800 font-semibold">{{ laudo.snapshotVistoria.numeroPavimentos }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotVistoria.sistemaEstruturalPredominante) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Sistema Estrutural</span>
+                <span class="text-slate-800 font-semibold">{{ laudo.snapshotVistoria.sistemaEstruturalPredominante }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotVistoria.sistemaFundacao) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Sistema de Fundação</span>
+                <span class="text-slate-800 font-semibold">{{ laudo.snapshotVistoria.sistemaFundacao }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotVistoria.nivelInspecao) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Nível de Inspeção</span>
+                <span class="inline-flex items-center gap-1.5 font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 mt-1">
+                  Nível {{ laudo.snapshotVistoria.nivelInspecao }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Card 2: Responsável Técnico & Empresa -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-200 space-y-4">
+          <div class="border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <mat-icon class="text-sky-600">badge</mat-icon>
+              <span>Responsável Técnico & Empresa</span>
+            </h3>
+            <p class="text-slate-400 text-xs mt-0.5">Perfil profissional em vigor no momento da emissão</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+              <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Profissional</span>
+              <span class="text-slate-800 font-bold text-sm">{{ laudo.snapshotProfile.fullName }}</span>
+            </div>
+
+            <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+              <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Título Profissional</span>
+              <span class="text-slate-800 font-semibold">{{ laudo.snapshotProfile.professionalTitle }}</span>
+            </div>
+
+            <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+              <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Registro Profissional</span>
+              <span class="text-slate-800 font-mono font-bold">{{ laudo.snapshotProfile.professionalId }}</span>
+            </div>
+
+            @if (laudo.snapshotProfile.companyName) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Empresa</span>
+                <span class="text-slate-800 font-bold">{{ laudo.snapshotProfile.companyName }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotProfile.companyCnpj) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">CNPJ</span>
+                <span class="text-slate-800 font-mono">{{ laudo.snapshotProfile.companyCnpj }}</span>
+              </div>
+            }
+
+            @if (laudo.snapshotProfile.companyAddress) {
+              <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 sm:col-span-2">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Endereço Comercial</span>
+                <span class="text-slate-800 font-medium">{{ laudo.snapshotProfile.companyAddress }}</span>
+              </div>
+            }
+
+            <!-- Links Úteis -->
+            @if (laudo.snapshotProfile.companyPhone || laudo.snapshotProfile.companyEmail || laudo.snapshotProfile.companySite || (laudo.snapshotProfile.socialNetworkLabel && laudo.snapshotProfile.socialNetworkUrl)) {
+              <div class="sm:col-span-2 pt-2 border-t border-slate-100 mt-2 space-y-2">
+                <span class="text-slate-400 font-bold uppercase block tracking-wider text-[10px]">Canais de Contato</span>
+                <div class="flex flex-wrap gap-2">
+                  @if (laudo.snapshotProfile.companyPhone) {
+                    <a [href]="'tel:' + normalizarTel(laudo.snapshotProfile.companyPhone)" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
+                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">phone</mat-icon>
+                      <span>Ligar</span>
+                    </a>
+                  }
+                  @if (laudo.snapshotProfile.companyEmail) {
+                    <a [href]="'mailto:' + laudo.snapshotProfile.companyEmail" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
+                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">email</mat-icon>
+                      <span>E-mail</span>
+                    </a>
+                  }
+                  @if (laudo.snapshotProfile.companySite) {
+                    <a [href]="normalizarUrl(laudo.snapshotProfile.companySite)" target="_blank" referrerpolicy="no-referrer" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
+                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">language</mat-icon>
+                      <span>Website</span>
+                    </a>
+                  }
+                  @if (laudo.snapshotProfile.socialNetworkLabel && laudo.snapshotProfile.socialNetworkUrl) {
+                    <a [href]="normalizarUrl(laudo.snapshotProfile.socialNetworkUrl)" target="_blank" referrerpolicy="no-referrer" class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-150 px-2.5 py-1 rounded-full text-xs transition-colors font-semibold">
+                      <mat-icon class="text-xs shrink-0" style="width:16px; height:16px; font-size:16px;">share</mat-icon>
+                      <span>{{ laudo.snapshotProfile.socialNetworkLabel }}</span>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Síntese da Inspeção (no momento da emissão) -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-200 space-y-6">
+        <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <mat-icon class="text-sky-600">analytics</mat-icon>
+              <span>Síntese da Inspeção</span>
+            </h3>
+            <p class="text-slate-400 text-xs mt-0.5">Indicadores consolidados no momento do fechamento</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-center flex flex-col justify-between">
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Total Itens</span>
+            <span class="text-slate-800 font-extrabold text-2xl">{{ stats.total }}</span>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-center flex flex-col justify-between">
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Avaliados</span>
+            <span class="text-slate-800 font-extrabold text-2xl">{{ stats.avaliados }}</span>
+          </div>
+
+          <div class="bg-emerald-50 border border-emerald-150 rounded-xl p-3.5 text-center flex flex-col justify-between">
+            <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider block mb-1">Aprovados</span>
+            <span class="text-emerald-800 font-extrabold text-2xl">{{ stats.conformes }}</span>
+          </div>
+
+          <div class="bg-rose-50 border border-rose-150 rounded-xl p-3.5 text-center flex flex-col justify-between">
+            <span class="text-[10px] text-rose-700 font-bold uppercase tracking-wider block mb-1">Falhas</span>
+            <span class="text-rose-800 font-extrabold text-2xl">{{ stats.naoConformes }}</span>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-center flex flex-col justify-between">
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">N/A</span>
+            <span class="text-slate-800 font-extrabold text-2xl">{{ stats.naoAplicaveis }}</span>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-150 rounded-xl p-3.5 text-center flex flex-col justify-between">
+            <span class="text-[10px] text-blue-700 font-bold uppercase tracking-wider block mb-1">Conclusão</span>
+            <span class="text-blue-800 font-extrabold text-2xl">{{ stats.percentualConclusao }}%</span>
+          </div>
+
+          <div class="bg-emerald-50 border border-emerald-150 rounded-xl p-3.5 text-center flex flex-col justify-between col-span-2 md:col-span-1">
+            <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider block mb-1">Conformidade</span>
+            <span class="text-emerald-800 font-extrabold text-2xl">{{ stats.taxaConformidade }}%</span>
+          </div>
+        </div>
+
+        <!-- Progresso visual -->
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs font-bold text-slate-700">
+            <span>Progresso Geral no Momento da Emissão</span>
+            <span class="text-sky-700">{{ stats.percentualConclusao }}%</span>
+          </div>
+          <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+            <div class="h-full rounded-full transition-all duration-300"
+                 [class.bg-green-500]="stats.percentualConclusao === 100"
+                 [class.bg-sky-600]="stats.percentualConclusao < 100"
+                 [style.width.%]="stats.percentualConclusao"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Resumo Complementar -->
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 text-center">
+        <p class="text-slate-600 text-xs sm:text-sm font-medium">
+          {{ laudo.snapshotVistoria.documentosNorteadores?.length ?? 0 }} documento(s) norteador(es) registrado(s) ·
+          {{ (laudo.snapshotVistoria.anamnese?.constatacoes?.length ?? 0) }} constatação(ões) de anamnese
+        </p>
+      </div>
     </div>
   }
