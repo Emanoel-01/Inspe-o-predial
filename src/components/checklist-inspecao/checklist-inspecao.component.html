@@ -1953,41 +1953,71 @@
               <p class="text-[10px] text-slate-400">Insira imagens ou documentos PDFs relevantes clicando em "Anexar Arquivos".</p>
             </div>
           } @else {
-            <div class="flex flex-wrap gap-3">
+            <div class="flex flex-wrap gap-4">
               @for (anexo of vistoriaAtiva()?.anamnese?.anexos; track anexo.id) {
-                <div class="flex items-center gap-2.5 p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 transition-colors text-xs relative max-w-[320px] pr-8">
+                <div class="flex flex-col gap-3.5 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 transition-colors text-xs relative w-full sm:w-[320px]">
                   
-                  <!-- Miniatura se imagem -->
-                  @if (anexo.tipo.startsWith('image/')) {
-                    <div class="w-12 h-12 rounded-lg border border-slate-300 bg-slate-200 overflow-hidden flex-shrink-0">
-                      <img [src]="anexoUrls()[anexo.id]" alt="Anexo" class="w-full h-full object-cover" referrerpolicy="no-referrer">
-                    </div>
-                  } @else {
-                    <!-- Ícone de Documento se PDF/Outro -->
-                    <div class="w-12 h-12 rounded-lg border border-slate-300 bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0 font-mono text-xs font-bold">
-                      PDF
-                    </div>
-                  }
+                  <div class="flex items-start gap-2.5 pr-6 relative">
+                    <!-- Miniatura se imagem -->
+                    @if (anexo.tipo.startsWith('image/')) {
+                      <div class="w-12 h-12 rounded-lg border border-slate-300 bg-slate-200 overflow-hidden flex-shrink-0">
+                        <img [src]="anexoUrls()[anexo.id]" alt="Anexo" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                      </div>
+                    } @else {
+                      <!-- Ícone de Documento se PDF/Outro -->
+                      <div class="w-12 h-12 rounded-lg border border-slate-300 bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0 font-mono text-xs font-bold">
+                        PDF
+                      </div>
+                    }
 
-                  <!-- Detalhes do Anexo -->
-                  <div class="min-w-0">
-                    <p class="font-bold text-slate-800 truncate text-xs" [title]="anexo.nome">{{ anexo.nome }}</p>
-                    <p class="text-[9px] text-slate-400 font-mono mt-0.5">{{ formatarBytes(anexo.tamanho) }}</p>
+                    <!-- Detalhes do Anexo -->
+                    <div class="min-w-0 flex-1">
+                      <p class="font-bold text-slate-800 truncate text-xs" [title]="anexo.nome">{{ anexo.nome }}</p>
+                      <p class="text-[9px] text-slate-400 font-mono mt-0.5">{{ formatarBytes(anexo.tamanho) }}</p>
+                    </div>
+
+                    <!-- Botão de Deletar Anexo Individual -->
+                    <button (click)="solicitarExcluirAnexoAnamnese(anexo.id)"
+                            class="absolute top-0 right-0 w-6 h-6 flex items-center justify-center rounded-lg border text-xs font-bold transition-all cursor-pointer"
+                            [class.bg-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                            [class.border-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                            [class.text-white]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                            [class.bg-white]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                            [class.border-slate-200]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                            [class.text-slate-400]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                            [class.hover:text-rose-600]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                            [title]="anexoPendenteConfirmacaoExclusao() === anexo.id ? 'Clique novamente para confirmar a exclusão' : 'Excluir anexo'">
+                      ✕
+                    </button>
                   </div>
 
-                  <!-- Botão de Deletar Anexo Individual -->
-                  <button (click)="solicitarExcluirAnexoAnamnese(anexo.id)"
-                          class="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-lg border text-xs font-bold transition-all cursor-pointer"
-                          [class.bg-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
-                          [class.border-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
-                          [class.text-white]="anexoPendenteConfirmacaoExclusao() === anexo.id"
-                          [class.bg-white]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
-                          [class.border-slate-200]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
-                          [class.text-slate-400]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
-                          [class.hover:text-rose-600]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
-                          [title]="anexoPendenteConfirmacaoExclusao() === anexo.id ? 'Clique novamente para confirmar a exclusão' : 'Excluir anexo'">
-                    ✕
-                  </button>
+                  <div class="space-y-2 pt-2.5 border-t border-slate-200/60">
+                    <!-- Legenda (sempre) -->
+                    <div class="space-y-1">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Legenda</label>
+                      <input type="text"
+                             [value]="anexo.legenda || ''"
+                             (blur)="salvarLegendaAnexoAnamnese(anexo.id, $any($event.target).value)"
+                             placeholder="Ex.: Fachada principal com fissuras"
+                             class="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
+                    </div>
+
+                    <!-- Vincular a constatação (opcional) -->
+                    @if (constatacoesLista().length > 0) {
+                      <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Vincular a Constatação</label>
+                        <select [value]="anexo.constatacaoId || ''"
+                                (change)="vincularAnexoConstatacao(anexo.id, $any($event.target).value)"
+                                class="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
+                          <option value="">— sem vínculo —</option>
+                          @for (c of constatacoesLista(); track c.id) {
+                            <option [value]="c.id">{{ rotuloConstatacaoBreve(c) }}</option>
+                          }
+                        </select>
+                      </div>
+                    }
+                  </div>
+
                 </div>
               }
             </div>

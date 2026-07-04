@@ -55,6 +55,8 @@ export interface Anexo {
   tipo: string;        // MIME real — file.type (ex.: 'image/png', 'application/pdf')
   tamanho: number;     // file.size (bytes)
   dataUpload: string;  // new Date().toISOString()
+  legenda?: string;          // NOVO — do que se trata o anexo (caption/legenda)
+  constatacaoId?: string;    // NOVO — vínculo opcional a uma Constatacao da mesma anamnese
 }
 
 export type DisponibilidadeNorteador = 'A_AVALIAR' | 'DD' | 'DND' | 'NA';
@@ -2930,6 +2932,31 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     this.atualizarVistoriaAtiva({ anamnese: { ...base, constatacoes: listaAtual, anexos: base.anexos.filter(a => a.id !== anexoId) } });
     this.toastService.show('Anexo excluído com sucesso.', 'success');
     void this.carregarUrlsAnexos();
+  }
+
+  salvarLegendaAnexoAnamnese(anexoId: string, legenda: string): void {
+    console.log(`salvarLegendaAnexoAnamnese: ${anexoId}`); // prova 0.4
+    const ativa = this.vistoriaAtiva(); if (!ativa?.anamnese) return;
+    const anexos = ativa.anamnese.anexos.map(a =>
+      a.id === anexoId ? { ...a, legenda: legenda.trim() || undefined } : a
+    );
+    this.atualizarVistoriaAtiva({ anamnese: { ...ativa.anamnese, anexos } });
+  }
+
+  vincularAnexoConstatacao(anexoId: string, constatacaoId: string): void {
+    console.log(`vincularAnexoConstatacao: ${anexoId} -> ${constatacaoId}`); // prova 0.4
+    const ativa = this.vistoriaAtiva(); if (!ativa?.anamnese) return;
+    const anexos = ativa.anamnese.anexos.map(a =>
+      a.id === anexoId ? { ...a, constatacaoId: constatacaoId || undefined } : a
+    );
+    this.atualizarVistoriaAtiva({ anamnese: { ...ativa.anamnese, anexos } });
+  }
+
+  rotuloConstatacaoBreve(c: Constatacao): string {
+    const meta = this.metaConstatacao(c.tipo);
+    const prefix = meta ? meta.rotulo : c.tipo;
+    const desc = c.descricao || '';
+    return `${prefix}: ${desc.slice(0, 40)}${desc.length > 40 ? '…' : ''}`;
   }
 
   limparRascunhoConstatacao(): void {
