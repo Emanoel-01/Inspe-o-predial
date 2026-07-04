@@ -1787,6 +1787,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const secao8 = this.gerarSecao8Html(itens);
     const secao9 = this.gerarSecao9Html(itens);
     const anexoI = this.gerarAnexoINorteadoresHtml(ativa);
+    const relacaoAnexos = this.gerarRelacaoAnexosHtml(ativa);
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -2313,6 +2314,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- ANEXO I — Documentos Norteadores -->
           ${anexoI}
 
+          <!-- RELAÇÃO DE ANEXOS -->
+          ${relacaoAnexos}
+
           <!-- RODAPÉ P4 -->
           <div class="doc-footer">
             <span class="prov-tag">PROVISÓRIO</span>
@@ -2721,13 +2725,20 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       vereditoCor = '#B23A48';
     }
 
-    let naoAplicaClausula = naoAplica > 0 ? `, dos quais ${naoAplica} não se aplicam à edificação` : '';
-    let naoDisponibClausula = naoDisponib > 0 ? ` e ${naoDisponib} não disponibilizados` : '';
-    let aAvaliarClausula = aAvaliar > 0 ? `, com ${aAvaliar} ainda pendente(s) de avaliação` : '';
+    const s = (n: number, sing: string, plur: string) => (n === 1 ? sing : plur);
 
-    const sintetico = `Foram inventariados ${total} documentos norteadores${naoAplicaClausula}. ` +
-      `Dos ${aplicaveis} documentos aplicáveis, ${disponibilizados} foram disponibilizados pelo responsável legal${naoDisponibClausula}${aAvaliarClausula}. ` +
-      `Dentre os disponibilizados, ${conformes} encontra(m)-se em conformidade e ${naoConformes} em não conformidade. ` +
+    const naoAplicaClausula = naoAplica > 0
+      ? `, ${s(naoAplica, 'do qual', 'dos quais')} ${naoAplica} não se ${s(naoAplica, 'aplica', 'aplicam')} à edificação` : '';
+    const naoDisponibClausula = naoDisponib > 0
+      ? ` e ${naoDisponib} não ${s(naoDisponib, 'disponibilizado', 'disponibilizados')}` : '';
+    const aAvaliarClausula = aAvaliar > 0
+      ? `, com ${aAvaliar} ainda ${s(aAvaliar, 'pendente', 'pendentes')} de avaliação` : '';
+    const conformidadeClausula = disponibilizados > 0
+      ? `Dentre os disponibilizados, ${conformes} ${s(conformes, 'encontra-se', 'encontram-se')} em conformidade e ${naoConformes} em não conformidade. ` : '';
+
+    const sintetico = `${s(total, 'Foi inventariado', 'Foram inventariados')} ${total} ${s(total, 'documento norteador', 'documentos norteadores')}${naoAplicaClausula}. ` +
+      `${s(aplicaveis, 'Do', 'Dos')} ${aplicaveis} ${s(aplicaveis, 'documento aplicável', 'documentos aplicáveis')}, ${disponibilizados} ${s(disponibilizados, 'foi disponibilizado', 'foram disponibilizados')} pelo responsável legal${naoDisponibClausula}${aAvaliarClausula}. ` +
+      conformidadeClausula +
       `Diante do exposto, verifica-se que a edificação encontra-se em <strong style="color:${vereditoCor};">${veredito}</strong> ` +
       `com as boas práticas de gestão documental do uso, operação e manutenção, nos termos das ABNT NBR 5674 e NBR 14037.`;
 
@@ -2920,6 +2931,83 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     html += `</div>`;
     return html;
+  }
+
+  private gerarRelacaoAnexosHtml(ativa: Vistoria): string {
+    interface LinhaAnexo { origem: string; anexo: Anexo }
+    const linhas: LinhaAnexo[] = [];
+
+    // Anamnese: SÓ documentos (não-imagem) — as imagens já são figuras na seção Anamnese
+    for (const a of (ativa.anamnese?.anexos ?? [])) {
+      if (!a.tipo.startsWith('image/')) {
+        linhas.push({ origem: 'Anamnese', anexo: a });
+      }
+    }
+
+    // Norteadores: TODOS os anexos (imagem e documento), pois não aparecem em outro lugar
+    for (const doc of (ativa.documentosNorteadores ?? [])) {
+      for (const a of (doc.anexos ?? [])) {
+        linhas.push({ origem: `Norteador: ${doc.descricao}`, anexo: a });
+      }
+    }
+
+    if (linhas.length === 0) return '';
+
+    const tipoLabel = (a: Anexo): string => {
+      if (a.tipo.startsWith('image/')) return 'Imagem';
+      const ext = (a.nome.split('.').pop() || '').toUpperCase();
+      if (ext && ext.length <= 5) return ext;
+      return (a.tipo.split('/').pop() || 'arquivo').toUpperCase();
+    };
+
+    const thS = 'background:#2C5AA0;color:#fff;padding:1.5mm 3mm;font-size:7.5pt;font-weight:700;text-align:left;border:1px solid #1a3f70;';
+    const tdS = 'padding:1.5mm 3mm;font-size:8pt;border:1px solid #D8D0C6;vertical-align:top;';
+
+    let linhasHtml = '';
+    let isEven = false;
+    for (let i = 0; i < linhas.length; i++) {
+      const item = linhas[i];
+      const bg = isEven ? '#F7F5F0' : '#ffffff';
+      isEven = !isEven;
+
+      const numStr = String(i + 1).padStart(2, '0');
+      const descStr = item.anexo.legenda || item.anexo.nome;
+      const sizeStr = this.formatarBytes(item.anexo.tamanho);
+      const labelT = tipoLabel(item.anexo);
+
+      linhasHtml += `
+        <tr style="background:${bg}">
+          <td style="${tdS}text-align:center;font-weight:600;width:5%;">${numStr}</td>
+          <td style="${tdS}width:30%;font-weight:500;color:#1A2A38;">${item.origem}</td>
+          <td style="${tdS}width:40%;">${descStr}</td>
+          <td style="${tdS}width:12%;">${labelT}</td>
+          <td style="${tdS}width:13%;font-family:monospace;font-size:7.5pt;">${sizeStr}</td>
+        </tr>
+      `;
+    }
+
+    return `
+      <div style="page-break-before:always;margin-top:8mm;page-break-inside:avoid;">
+        <h2 class="sec-h"><span class="sn">A-II</span> Relação de Anexos</h2>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:2mm;">
+          <thead>
+            <tr>
+              <th style="${thS}text-align:center;width:5%;">Nº</th>
+              <th style="${thS}width:30%;">Origem</th>
+              <th style="${thS}width:40%;">Descrição</th>
+              <th style="${thS}width:12%;">Tipo</th>
+              <th style="${thS}width:13%;">Tamanho</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhasHtml}
+          </tbody>
+        </table>
+        <p style="font-size:7.5pt;color:#6B7280;font-style:italic;margin-top:2mm;">
+          Os documentos acima integram o acervo digital desta inspeção e são disponibilizados em meio eletrônico junto a este relatório.
+        </p>
+      </div>
+    `;
   }
 
   private gerarSecao7Html(
