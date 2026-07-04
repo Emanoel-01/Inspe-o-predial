@@ -1595,8 +1595,11 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           badgeClass = 'badge-status-ok'; badgeText = 'CONFORME';
         } else if (item.status === 'FAIL' || item.status === 'NAO_CONFORME') {
           badgeClass = 'badge-status-nc';
-          const oc = item.ocorrencias?.[0];
-          badgeText = `NÃO CONFORME · ${oc?.severity ? oc.severity.toUpperCase() : 'PENDENTE'}`;
+          const qtd = item.ocorrencias?.length ?? 0;
+          const criticidades = (item.ocorrencias ?? []).map(f => f.criticidade).filter(Boolean);
+          const maisCritica = criticidades.includes('P1') ? 'P1' : criticidades.includes('P2') ? 'P2' : criticidades.includes('P3') ? 'P3' : null;
+          const rotuloCriticidade = maisCritica ? maisCritica : (item.ocorrencias?.[0]?.severity?.toUpperCase() ?? 'PENDENTE');
+          badgeText = `NÃO CONFORME · ${qtd} OCORRÊNCIA${qtd === 1 ? '' : 'S'} · ${rotuloCriticidade}`;
         } else if (item.status === 'NA' || item.status === 'NAO_APLICAVEL') {
           badgeClass = 'badge-status-na'; badgeText = 'N/A';
         }
@@ -2355,50 +2358,77 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   private gerarSecao9Html(itens: ChecklistItem[]): string {
-    const itensComMemorial = itens.filter(
-      item => (item.status === 'NAO_CONFORME' || item.status === 'FAIL') && item.ocorrencias?.[0]?.memorialDescritivo?.trim()
-    );
+    const todasFichas: { item: ChecklistItem; ficha: FichaDano }[] = [];
+    itens.forEach(item => {
+      (item.ocorrencias ?? []).forEach(ficha => {
+        todasFichas.push({ item, ficha });
+      });
+    });
+    todasFichas.sort((a, b) => (a.ficha.numeroFicha ?? 0) - (b.ficha.numeroFicha ?? 0));
 
-    if (itensComMemorial.length === 0) {
+    if (todasFichas.length === 0) {
       return `
         <h2 class="sec-h"><span class="sn">9.</span> Plano de Ação e Memorial Descritivo</h2>
         <p style="font-size:9pt;color:#6B7280;font-style:italic;margin-bottom:6mm;">
-          Nenhum memorial descritivo gerado para esta vistoria. Para gerar, acesse cada item Não Conforme na Vistoria RTIPA e clique em "Gerar Memorial Descritivo".
+          Nenhuma ocorrência registrada nesta vistoria.
         </p>`;
     }
 
     let html = `<h2 class="sec-h"><span class="sn">9.</span> Plano de Ação e Memorial Descritivo</h2>`;
 
-    for (const item of itensComMemorial) {
-      const idx = itens.findIndex(i => i.id === item.id);
-      const seqStr = String(idx + 1).padStart(2, '0');
-      const oc = item.ocorrencias?.[0];
+    for (const { item, ficha } of todasFichas) {
+      const seqStr = String(ficha.numeroFicha ?? 0).padStart(3, '0');
 
-      let sevClass = '';
-      let sevLabel = '';
-      if (oc?.severity === 'Mínimo') { sevClass = 's9-sev-min'; sevLabel = 'Risco Mínimo'; }
-      else if (oc?.severity === 'Regular') { sevClass = 's9-sev-reg'; sevLabel = 'Risco Regular'; }
-      else if (oc?.severity === 'Crítico') { sevClass = 's9-sev-cri'; sevLabel = 'Risco Crítico'; }
-      else { sevClass = 's9-sev-pend'; sevLabel = 'Classificação Pendente'; }
+      let sevClass = 's9-sev-pend';
+      let sevLabel = 'Classificação Pendente';
+      if (ficha.criticidade === 'P1') { sevClass = 's9-sev-cri'; sevLabel = 'Prioridade 1 — Crítico'; }
+      else if (ficha.criticidade === 'P2') { sevClass = 's9-sev-reg'; sevLabel = 'Prioridade 2 — Médio'; }
+      else if (ficha.criticidade === 'P3') { sevClass = 's9-sev-min'; sevLabel = 'Prioridade 3 — Mínimo'; }
 
-      const quantDisplay = oc?.quantitativo?.trim()
-        ? `<div class="s9-quant"><strong>Quantitativo de campo:</strong> ${oc.quantitativo.trim()}</div>`
+      const localizacao = (ficha.pavimento || ficha.ambiente)
+        ? `${ficha.pavimento ?? ''}${ficha.pavimento && ficha.ambiente ? ' · ' : ''}${ficha.ambiente ?? ''}`
+        : 'Localização não informada';
+
+      const classificacaoTexto = ficha.classificacao?.tipo && ficha.classificacao.tipo !== 'INDETERMINADO'
+        ? `${ficha.classificacao.tipo === 'ANOMALIA' ? 'Anomalia' : 'Falha'}${ficha.classificacao.subtipo ? ' — ' + ficha.classificacao.subtipo : ''}`
+        : 'Não classificada';
+
+      const normasHtml = (ficha.normasAplicaveis ?? []).length
+        ? `<div class="s9-normas">${ficha.normasAplicaveis.map(n => `<span class="s9-chip">${n.codigo}</span>`).join(' ')}</div>`
         : '';
 
-      const memorialHtml = this.markdownParaHtmlPdf(oc?.memorialDescritivo ?? '');
+      const temCamposEstruturados = ficha.manifestacao || ficha.causaProvavel || ficha.recomendacaoTecnica;
+      let corpoHtml = '';
+      if (temCamposEstruturados) {
+        corpoHtml = `
+          ${ficha.manifestacao ? `<p><strong>Manifestação:</strong> ${ficha.manifestacao}</p>` : ''}
+          ${ficha.causaProvavel ? `<p><strong>Causa provável:</strong> ${ficha.causaProvavel}</p>` : ''}
+          ${ficha.recomendacaoTecnica ? `<p><strong>Recomendação técnica:</strong> ${ficha.recomendacaoTecnica}</p>` : ''}
+        `;
+      } else if (ficha.memorialDescritivo?.trim()) {
+        corpoHtml = this.markdownParaHtmlPdf(ficha.memorialDescritivo);
+      } else {
+        corpoHtml = `<p style="color:#6B7280;font-style:italic;">Ficha registrada sem diagnóstico preenchido.</p>`;
+      }
+
+      const quantDisplay = ficha.quantitativo?.trim()
+        ? `<div class="s9-quant"><strong>Quantitativo de campo:</strong> ${ficha.quantitativo.trim()}</div>`
+        : '';
 
       html += `
         <div class="s9-card no-break">
           <div class="s9-header">
-            <span class="s9-id">${seqStr}</span>
+            <span class="s9-id">FICHA Nº ${seqStr}</span>
             <div class="s9-chips">
               <span class="s9-chip">${item.systemTitle ?? ''}</span>
               <span class="s9-chip">${item.typologyTitle ?? ''}</span>
+              <span class="s9-chip">${localizacao}</span>
             </div>
-            ${sevLabel ? `<span class="s9-severity ${sevClass}">${sevLabel}</span>` : ''}
+            <span class="s9-severity ${sevClass}">${sevLabel}</span>
           </div>
-          <div class="s9-title">${item.title ?? ''}</div>
-          <div class="s9-body">${memorialHtml}</div>
+          <div class="s9-title">${item.title ?? ''} <span style="font-weight:400;color:#6B7280;">— ${classificacaoTexto}</span></div>
+          <div class="s9-body">${corpoHtml}</div>
+          ${normasHtml}
           ${quantDisplay}
         </div>`;
     }
