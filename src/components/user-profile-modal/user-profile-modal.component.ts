@@ -26,6 +26,11 @@ export class UserProfileModalComponent {
     position: 'Diretor de Engenharia',
     companyCnpj: '12.345.678/0001-90',
     companyAddress: 'Recife - PE, Brasil',
+    companyPhone: '(81) 99999-9999',
+    companyEmail: 'contato@suaempresa.com.br',
+    companySite: 'https://suaempresa.com.br',
+    socialNetworkLabel: 'Instagram',
+    socialNetworkUrl: 'https://instagram.com/suaempresa',
   };
 
   saveState = signal<'idle' | 'saving' | 'saved'>('idle');
