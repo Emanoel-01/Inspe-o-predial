@@ -881,26 +881,97 @@
                   <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider mr-2">Avaliação de Campo:</span>
                   
                   <button (click)="alterarStatusItem(item.id, 'PASS')"
-                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 ' + 
+                          [disabled]="(item.ocorrencias ?? []).length > 0"
+                          [title]="(item.ocorrencias ?? []).length > 0 ? 'Remova as ocorrências registradas para reclassificar este item' : ''"
+                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ' + 
                                    (item.status === 'CONFORME' || item.status === 'PASS' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white hover:bg-emerald-50 text-emerald-800 border-slate-200 hover:border-emerald-200')">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     <span>Pass (Aprovado)</span>
                   </button>
 
-                  <button (click)="alterarStatusItem(item.id, 'FAIL')"
-                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 ' + 
-                                   (item.status === 'NAO_CONFORME' || item.status === 'FAIL' ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white hover:bg-rose-50 text-rose-800 border-slate-200 hover:border-rose-200')">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span>Fail (Falha)</span>
-                  </button>
-
                   <button (click)="alterarStatusItem(item.id, 'NA')"
-                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 ' + 
+                          [disabled]="(item.ocorrencias ?? []).length > 0"
+                          [title]="(item.ocorrencias ?? []).length > 0 ? 'Remova as ocorrências registradas para reclassificar este item' : ''"
+                          [class]="'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ' + 
                                    (item.status === 'NAO_APLICAVEL' || item.status === 'NA' ? 'bg-slate-700 text-white border-slate-700 shadow-sm' : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200')">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                     <span>N/A (Não Aplicável)</span>
                   </button>
+
+                  <button type="button"
+                          (click)="criarNovaOcorrencia(item.id)"
+                          class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ml-auto cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    <span>+ Registrar Ocorrência</span>
+                  </button>
                 </div>
+
+                <!-- Lista de Ocorrências (Opcional se houver alguma) -->
+                @if ((item.ocorrencias ?? []).length > 0) {
+                  <div class="mt-3 space-y-2">
+                    <div class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ocorrências registradas ({{ item.ocorrencias.length }}):</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      @for (f of item.ocorrencias; track f.id) {
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between gap-2 shadow-sm">
+                          <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1 bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                              Ficha nº {{ f.numeroFicha }}
+                            </span>
+                            <div class="flex items-center gap-1">
+                              <button type="button" (click)="fichaEmEdicaoId.set(f.id); itemDaFichaEmEdicaoId.set(item.id)"
+                                      class="p-1 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded transition-colors cursor-pointer"
+                                      title="Editar localização">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                              </button>
+                              <button type="button" (click)="confirmarExcluirOcorrencia(item.id, f.id)"
+                                      class="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+                                      title="Excluir ocorrência">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          @if (fichaEmEdicaoId() === f.id) {
+                            <div class="space-y-3 pt-2 border-t border-slate-200/60">
+                              <div class="grid grid-cols-2 gap-2">
+                                <div class="space-y-1">
+                                  <label class="block text-[9px] font-bold uppercase text-slate-500">Pavimento</label>
+                                  <input #pavInput [value]="f.pavimento || ''"
+                                         placeholder="Ex: Térreo, 2º andar"
+                                         class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                </div>
+                                <div class="space-y-1">
+                                  <label class="block text-[9px] font-bold uppercase text-slate-500">Ambiente</label>
+                                  <input #ambInput [value]="f.ambiente || ''"
+                                         placeholder="Ex: Hall, Banheiro"
+                                         class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                </div>
+                              </div>
+                              <div class="flex justify-end gap-1.5">
+                                <button type="button" (click)="fichaEmEdicaoId.set(null); itemDaFichaEmEdicaoId.set(null)"
+                                        class="px-2 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-200 rounded transition-colors cursor-pointer border border-slate-200 bg-white">
+                                  Cancelar
+                                </button>
+                                <button type="button" (click)="salvarCamposBasicosFicha(item.id, f.id, pavInput.value, ambInput.value); fichaEmEdicaoId.set(null); itemDaFichaEmEdicaoId.set(null)"
+                                        class="px-2 py-1 text-[10px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded transition-colors cursor-pointer border border-sky-600">
+                                  Salvar
+                                </button>
+                              </div>
+                            </div>
+                          } @else {
+                            <div class="text-xs text-slate-600 font-semibold">
+                              @if (f.pavimento || f.ambiente) {
+                                {{ f.pavimento || 'Pavimento não informado' }} · {{ f.ambiente || 'Ambiente não informado' }}
+                              } @else {
+                                <span class="text-slate-400 italic">Localização não informada</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
 
                 <!-- Painel Extra se Falha (FAIL) -->
                 @if (item.status === 'NAO_CONFORME' || item.status === 'FAIL') {

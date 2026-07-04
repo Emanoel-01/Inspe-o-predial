@@ -144,6 +144,8 @@ export class ChecklistInspecaoComponent implements OnInit {
   itemSalvoFeedback = signal<string | null>(null);
   itemGaleriaAberta = signal<string | null>(null);
   evidenciasGaleria = signal<{ url: string; ev: Evidencia }[]>([]);
+  fichaEmEdicaoId = signal<string | null>(null);
+  itemDaFichaEmEdicaoId = signal<string | null>(null);
 
   private sinalizarSalvo(itemId: string): void {
     this.itemSalvoFeedback.set(itemId);
@@ -247,6 +249,74 @@ export class ChecklistInspecaoComponent implements OnInit {
       dateCreated: '',
       dateUpdated: ''
     };
+  }
+
+  criarNovaOcorrencia(itemId: string): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const novosItens = ativa.items.map(item => {
+      if (item.id !== itemId) return item;
+      const itemAtualizado = { ...item, ocorrencias: [...(item.ocorrencias ?? [])] };
+      ativa.contadorFichas = (ativa.contadorFichas ?? 0) + 1;
+      const nova: FichaDano = {
+        id: 'ficha-' + crypto.randomUUID(),
+        numeroFicha: ativa.contadorFichas,
+        notes: '',
+        dateCreated: new Date().toISOString(),
+        dateUpdated: new Date().toISOString(),
+      };
+      itemAtualizado.ocorrencias.push(nova);
+      itemAtualizado.status = 'NAO_CONFORME';  // regra: 1+ ocorrência força NAO_CONFORME sempre
+      this.fichaEmEdicaoId.set(nova.id);
+      this.itemDaFichaEmEdicaoId.set(itemId);
+      return itemAtualizado;
+    });
+
+    this.atualizarItensVistoriaAtiva(novosItens);
+  }
+
+  excluirOcorrencia(itemId: string, fichaId: string): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const novosItens = ativa.items.map(item => {
+      if (item.id !== itemId) return item;
+      const ocorrenciasRestantes = (item.ocorrencias ?? []).filter(f => f.id !== fichaId);
+      const itemAtualizado = { ...item, ocorrencias: ocorrenciasRestantes };
+      // Se não sobrou nenhuma ocorrência, o status volta a ser decidido manualmente pelo RT (PENDENTE)
+      if (ocorrenciasRestantes.length === 0) {
+        itemAtualizado.status = 'PENDENTE';
+      }
+      return itemAtualizado;
+    });
+
+    this.atualizarItensVistoriaAtiva(novosItens);
+    if (this.fichaEmEdicaoId() === fichaId) {
+      this.fichaEmEdicaoId.set(null);
+      this.itemDaFichaEmEdicaoId.set(null);
+    }
+  }
+
+  confirmarExcluirOcorrencia(itemId: string, fichaId: string): void {
+    if (confirm('Tem certeza que deseja excluir esta ocorrência?')) {
+      this.excluirOcorrencia(itemId, fichaId);
+    }
+  }
+
+  salvarCamposBasicosFicha(itemId: string, fichaId: string, pavimento: string, ambiente: string): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const novosItens = ativa.items.map(item => {
+      if (item.id !== itemId) return item;
+      const ocorrenciasAtualizadas = (item.ocorrencias ?? []).map(f =>
+        f.id === fichaId ? { ...f, pavimento, ambiente, dateUpdated: new Date().toISOString() } : f
+      );
+      return { ...item, ocorrencias: ocorrenciasAtualizadas };
+    });
+
+    this.atualizarItensVistoriaAtiva(novosItens);
   }
 
   onNivelInspecaoChange(event: Event): void {
@@ -789,25 +859,30 @@ export class ChecklistInspecaoComponent implements OnInit {
     this.toastService.show('Vistoria excluída com sucesso.', 'success');
   }
 
-  alterarStatusItem(itemId: string, novoStatus: 'PASS' | 'FAIL' | 'NA'): void {
+  alterarStatusItem(itemId: string, novoStatus: 'PASS' | 'NA'): void {
     const ativa = this.vistoriaAtiva();
     if (!ativa) return;
 
+    let temOcorrencias = false;
+
     const novosItens = ativa.items.map(item => {
       if (item.id === itemId) {
+        if (item.ocorrencias && item.ocorrencias.length > 0) {
+          temOcorrencias = true;
+          return item;
+        }
         const itemAtualizado = { ...item, status: novoStatus };
         const oc = this.obterOuCriarOcorrenciaAtiva(itemAtualizado);
-        // Resetar gravidade se mudou de falha (FAIL) para outra coisa
-        if (novoStatus !== 'FAIL') {
-          delete oc.severity;
-        } else if (!oc.severity) {
-          // Valor padrão para não conforme
-          oc.severity = 'Regular';
-        }
+        delete oc.severity;
         return itemAtualizado;
       }
       return item;
     });
+
+    if (temOcorrencias) {
+      this.toastService.show('Remova as ocorrências registradas para reclassificar este item.', 'info');
+      return;
+    }
 
     this.atualizarItensVistoriaAtiva(novosItens);
     this.sinalizarSalvo(itemId);
