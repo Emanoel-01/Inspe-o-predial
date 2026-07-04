@@ -1314,7 +1314,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
         o.memorialDescritivo = memorial;
         return it;
       });
-      this.toastService.show('Memorial descritivo gerado. Revise antes de emitir o RTIPA.', 'success');
+      this.toastService.show('Memorial descritivo gerado. Revise antes de emitir o Laudo Técnico de Inspeção Predial.', 'success');
     } catch (error) {
       console.error('Erro ao gerar memorial descritivo:', error);
       this.toastService.show('Não foi possível gerar o memorial. Tente novamente.', 'error');
@@ -2133,7 +2133,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
                   <div class="rh-wrap">
                     <div class="rh-left">
                       ${profile.companyLogoBase64
-                        ? `<img src="${profile.companyLogoBase64}" style="max-height:10mm;max-width:50mm;object-fit:contain;">`
+                        ? `<img src="${profile.companyLogoBase64}" style="max-height:13mm;max-width:60mm;object-fit:contain;">`
                         : `<span class="rh-brand">${this.formatarLogoMarca(profile.companyName)}</span>`
                       }
                     </div>
@@ -2150,7 +2150,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
               <tr>
                 <td class="print-tfoot-td">
                   <div class="rf-wrap">
-                    <span class="rf-doc">RTIPA — ${form.buildingName.length > 45 ? form.buildingName.slice(0, 42) + '…' : form.buildingName}</span>
+                    <span class="rf-doc">Laudo Técnico de Inspeção Predial — ${form.buildingName.length > 45 ? form.buildingName.slice(0, 42) + '…' : form.buildingName}</span>
                     <span class="rf-prov">⚠ Documento Provisório</span>
                     <span class="rf-page"></span>
                   </div>
@@ -2161,18 +2161,23 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             <tbody>
               <tr class="print-tbody-tr">
                 <td class="print-tbody-td">
-
+ 
           <!-- CAPA P4 -->
           <div class="capa">
             <div class="capa-titulo">
-              <h1>Relatório Técnico de Inspeção<br>Predial e Avaliação — RTIPA</h1>
+              <h1>Laudo Técnico de Inspeção Predial</h1>
               <div class="sub">${form.buildingName}</div>
             </div>
             <div class="capa-meta">
               <b>Empreendimento:</b> ${form.buildingName}<br>
-              <b>Endereço:</b> ${form.address}<br>
-              <b>Responsável Técnico:</b> ${profile.fullName} — ${profile.professionalId || ''}<br>
-              <b>Empresa:</b> ${profile.companyName || ''} · CNPJ: ${profile.companyCnpj || ''}<br>
+              <b>Endereço da Edificação:</b> ${form.address}<br>
+              <b>Empresa:</b> ${profile.companyName || ''}${profile.companyCnpj ? ` · CNPJ: ${profile.companyCnpj}` : ''}<br>
+              ${profile.companyAddress ? `<b>Endereço:</b> ${profile.companyAddress}<br>` : ''}
+              ${profile.companyPhone ? `<b>Telefone:</b> <a href="tel:${this.normalizarTel(profile.companyPhone)}" style="color:#132A41;text-decoration:none;">${profile.companyPhone}</a><br>` : ''}
+              ${profile.companyEmail ? `<b>E-mail:</b> <a href="mailto:${profile.companyEmail}" style="color:#185fa5;">${profile.companyEmail}</a><br>` : ''}
+              ${profile.companySite ? `<b>Site:</b> <a href="${this.normalizarUrl(profile.companySite)}" style="color:#185fa5;">${profile.companySite}</a><br>` : ''}
+              ${(profile.socialNetworkLabel && profile.socialNetworkUrl) ? `<b>Rede Social:</b> <a href="${this.normalizarUrl(profile.socialNetworkUrl)}" style="color:#185fa5;">${profile.socialNetworkLabel}</a><br>` : ''}
+              <b>Responsável Técnico:</b> ${profile.fullName}${profile.professionalTitle ? ` — ${profile.professionalTitle}` : ''}${profile.professionalId ? ` — ${profile.professionalId}` : ''}<br>
               <b>Data da vistoria:</b> ${new Date(ativa.dateCreated).toLocaleDateString('pt-BR')}
             </div>
             <div class="prov-banner">
@@ -2206,7 +2211,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- SEÇÃO 2 — Objeto e Natureza -->
           <h2 class="sec-h"><span class="sn">2.</span> Objeto e Natureza da Inspeção</h2>
           <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">
-            O presente Relatório Técnico de Inspeção Predial e Avaliação (RTIPA) tem por objeto a edificação denominada
+            O presente Laudo Técnico de Inspeção Predial tem por objeto a edificação denominada
             <strong>${form.buildingName}</strong>, localizada em <strong>${form.address}</strong>,
             conforme identificação e caracterização constantes das seções subsequentes.
             A inspeção foi realizada por profissional habilitado (${profile.fullName} — ${profile.professionalId || 'CAU/CREA'}),
@@ -2326,18 +2331,20 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <div class="chancela-at">
             <div style="display:flex;align-items:flex-start;gap:6mm;flex-wrap:wrap;">
               <div style="flex:0 0 auto;">
-                <div class="at-logo" style="margin-bottom:2mm;">Amorim<span>Tech</span></div>
-                <div style="font-size:7pt;color:#B5642A;font-weight:600;letter-spacing:.04em;">Ecossistema 4.0</div>
+                <div class="at-logo" style="margin-bottom:2mm;">${profile.companyName || 'Predial 4.0'}</div>
               </div>
               <div class="at-txt" style="flex:1;min-width:180px;">
                 <strong style="color:#1A2A38;font-size:8pt;">Predial 4.0</strong> — Plataforma de Gestão e Inteligência Predial Avançada<br>
-                Rua Leonardo Bezerra Cavalcante, 672 — Recife/PE<br>
-                <span style="color:#B5642A;">emanoel@emanoelamorim.com.br</span>
-                &nbsp;·&nbsp; (81) 99129-8803 <span style="color:#8A949C;">(WhatsApp)</span>
-                &nbsp;·&nbsp; (81) 99928-4160 <span style="color:#8A949C;">(Ligações)</span><br>
-                <a href="https://emanoelamorim.base44.app" style="color:#185fa5;font-size:7pt;">emanoelamorim.base44.app</a>
-                &nbsp;·&nbsp; CNPJ: 12.345.678/0001-90<br>
-                <span style="font-style:italic;color:#6B7280;font-size:7pt;">"O Predial 4.0 dá a ferramenta; o profissional assina; a AmorimTech chancela."</span>
+                ${profile.companyAddress ? `${profile.companyAddress}<br>` : ''}
+                ${[
+                  profile.companyEmail ? `<a href="mailto:${profile.companyEmail}" style="color:#B5642A;">${profile.companyEmail}</a>` : '',
+                  profile.companyPhone ? `<a href="tel:${this.normalizarTel(profile.companyPhone)}" style="color:#4A5A66;text-decoration:none;">${profile.companyPhone}</a>` : '',
+                ].filter(Boolean).join('&nbsp;·&nbsp;')}<br>
+                ${[
+                  profile.companySite ? `<a href="${this.normalizarUrl(profile.companySite)}" style="color:#185fa5;font-size:7pt;">${profile.companySite}</a>` : '',
+                  (profile.socialNetworkLabel && profile.socialNetworkUrl) ? `<a href="${this.normalizarUrl(profile.socialNetworkUrl)}" style="color:#185fa5;font-size:7pt;">${profile.socialNetworkLabel}</a>` : '',
+                  profile.companyCnpj ? `CNPJ: ${profile.companyCnpj}` : '',
+                ].filter(Boolean).join('&nbsp;·&nbsp;')}
               </div>
             </div>
           </div>
@@ -3560,6 +3567,16 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     this.atualizarVistoriaAtiva({ documentosNorteadores: atualizados });
     this.toastService.show(`${novosAnexosMetadados.length} anexo(s) adicionado(s) com sucesso.`, 'success');
     void this.carregarUrlsAnexos();
+  }
+
+  private normalizarUrl(url?: string): string {
+    if (!url) return '';
+    return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  }
+
+  private normalizarTel(tel?: string): string {
+    if (!tel) return '';
+    return tel.replace(/[^\d+]/g, '');
   }
 
   formatarBytes(bytes: number): string {

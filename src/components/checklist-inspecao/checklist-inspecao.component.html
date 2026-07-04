@@ -518,7 +518,7 @@
         <div class="space-y-1">
           <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
             Número da ART / RRT
-            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — aparece na Seção 1 do RTIPA)</span>
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — aparece na Seção 1 do LTIP)</span>
           </label>
           <input [value]="novoArtRrt()" 
                  (input)="novoArtRrt.set($any($event.target).value)" 
@@ -528,7 +528,7 @@
         <div class="sm:col-span-2 space-y-1">
           <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
             Memorial Descritivo da Edificação
-            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — use o Gerador Seção 4 externo para gerar — aparece na Seção 4 do RTIPA)</span>
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — use o Gerador Seção 4 externo para gerar — aparece na Seção 4 do LTIP)</span>
           </label>
           <textarea [value]="novoMemoriaDescritivo()"
                     (input)="novoMemoriaDescritivo.set($any($event.target).value)"
@@ -563,7 +563,7 @@
         <div class="sm:col-span-2 space-y-2">
           <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">
             Imagem do Mapa de Localização
-            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — Seção 4 do RTIPA)</span>
+            <span class="normal-case font-normal text-slate-400 ml-1">(opcional — Seção 4 do LTIP)</span>
           </label>
           <input type="file" accept="image/png,image/jpeg,image/jpg"
                  (change)="onMapaImagemChange($event)"
@@ -1176,7 +1176,7 @@
                       </div>
                     </div>
 
-                    <!-- (3º) MEMORIAL DESCRITIVO — Seção 9 do RTIPA -->
+                    <!-- (3º) MEMORIAL DESCRITIVO — Seção 9 do LTIP -->
                     <div class="pt-3 border-t border-rose-100/60 flex flex-col gap-2.5">
                       <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-rose-800 uppercase tracking-wide flex items-center gap-1.5">
