@@ -71,6 +71,11 @@ export interface DocumentoNorteador {
   anexos: Anexo[];                            // metadados; blobs no store
 }
 
+export interface Anamnese {
+  constatacoes: string;
+  anexos: Anexo[];
+}
+
 export interface Vistoria {
   id: string;
   buildingName: string;
@@ -105,6 +110,7 @@ export interface Vistoria {
   progress: number;
   items: ChecklistItem[];
   documentosNorteadores?: DocumentoNorteador[];
+  anamnese?: Anamnese;
 }
 
 const SCHEMA_ANALISE_EVIDENCIA = {
@@ -480,7 +486,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   filtroSistema = signal<string>('TODOS');
 
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
-  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES'>('LISTA');
+  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE'>('LISTA');
   vistoriaEmEdicao = signal<Vistoria | null>(null);
 
   // Carregar os sistemas organizados da base de dados estática
@@ -2778,6 +2784,17 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
         }
       }
     }
+
+    // Carrega também as imagens da Anamnese
+    for (const anexo of (ativa.anamnese?.anexos ?? [])) {
+      if (anexo.tipo.startsWith('image/')) {
+        const ab = await this.dbService.getAnexoBlob(anexo.id);
+        if (ab) {
+          novasUrls[anexo.id] = URL.createObjectURL(ab.blob);
+        }
+      }
+    }
+
     this.anexoUrls.set(novasUrls);
   }
 
@@ -2812,6 +2829,73 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   voltarDeNorteadores(): void {
     this.limparUrlsAnexos();
     this.modoExibicao.set('EXECUCAO');
+  }
+
+  navegarParaAnamnese(): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) {
+      this.toastService.show('Selecione uma vistoria ativa para acessar a Anamnese.', 'error');
+      return;
+    }
+    console.log('navegarParaAnamnese disparado'); // prova de evento 0.4
+    if (!ativa.anamnese) {
+      this.atualizarVistoriaAtiva({
+        anamnese: { constatacoes: '', anexos: [] }
+      });
+    }
+    this.modoExibicao.set('ANAMNESE');
+    void this.carregarUrlsAnexos();
+  }
+
+  voltarDeAnamnese(): void {
+    console.log('voltarDeAnamnese disparado'); // prova de evento 0.4
+    this.limparUrlsAnexos();
+    this.modoExibicao.set('EXECUCAO');
+  }
+
+  async processarAnexoAnamnese(files: FileList | null): Promise<void> {
+    console.log(`processarAnexoAnamnese: ${files?.length ?? 0} arquivo(s)`); // prova 0.4
+    if (!files || files.length === 0) return;
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    const novos: Anexo[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]; const id = crypto.randomUUID();
+      await this.dbService.saveAnexoBlob({ id, blob: file, mimeType: file.type });
+      novos.push({ id, nome: file.name, tipo: file.type, tamanho: file.size, dataUpload: new Date().toISOString() });
+    }
+    const base = ativa.anamnese ?? { constatacoes: '', anexos: [] };
+    this.atualizarVistoriaAtiva({ anamnese: { ...base, anexos: [...base.anexos, ...novos] } });
+    void this.carregarUrlsAnexos();
+  }
+
+  solicitarExcluirAnexoAnamnese(anexoId: string): void {
+    console.log(`solicitarExcluirAnexoAnamnese: ${anexoId}`); // prova 0.4
+    if (this.anexoPendenteConfirmacaoExclusao() === anexoId) {
+      void this.excluirAnexoAnamnese(anexoId);
+      this.anexoPendenteConfirmacaoExclusao.set(null);
+    } else {
+      this.anexoPendenteConfirmacaoExclusao.set(anexoId);
+      this.toastService.show('Clique novamente para confirmar a exclusão deste anexo.', 'info');
+      setTimeout(() => {
+        if (this.anexoPendenteConfirmacaoExclusao() === anexoId) this.anexoPendenteConfirmacaoExclusao.set(null);
+      }, 3000);
+    }
+  }
+
+  private async excluirAnexoAnamnese(anexoId: string): Promise<void> {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    await this.dbService.deleteAnexoBlob(anexoId);
+    const base = ativa.anamnese ?? { constatacoes: '', anexos: [] };
+    this.atualizarVistoriaAtiva({ anamnese: { ...base, anexos: base.anexos.filter(a => a.id !== anexoId) } });
+    this.toastService.show('Anexo excluído com sucesso.', 'success');
+    void this.carregarUrlsAnexos();
+  }
+
+  salvarConstatacoesAnamnese(texto: string): void {
+    console.log(`salvarConstatacoesAnamnese disparado: ${texto.substring(0, 30)}...`); // prova de evento 0.4
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    const base = ativa.anamnese ?? { constatacoes: '', anexos: [] };
+    this.atualizarVistoriaAtiva({ anamnese: { ...base, constatacoes: texto } });
   }
 
   adicionarDocumentoNorteador(): void {

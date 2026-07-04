@@ -705,6 +705,10 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
               <span>Doc. Norteadores</span>
             </button>
+            <button (click)="navegarParaAnamnese()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-sky-100 active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
+              <span>Anamnese</span>
+            </button>
             <button (click)="exportarRelatorioPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-sm active:scale-95">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
               <span>Gerar Relatório</span>
@@ -1700,5 +1704,131 @@
           </div>
         }
       }
+    </div>
+  }
+
+  <!-- MODO 5: ANAMNESE (CONSTATACÕES + ANEXOS GERAIS) -->
+  @if (modoExibicao() === 'ANAMNESE' && vistoriaAtiva()) {
+    <div class="space-y-6">
+      <!-- Cabeçalho de Navegação -->
+      <div class="bg-white rounded-xl shadow-lg p-5 border border-slate-200 sticky top-0 z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-indigo-100 text-indigo-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-1 inline-block">
+            Histórico e Constatações
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Anamnese</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Vistoria: {{ vistoriaAtiva()?.buildingName }} · Histórico da edificação e relatos</p>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button (click)="voltarDeAnamnese()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-slate-200 active:scale-95 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Voltar à Inspeção</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulário de Constatações e Detalhes -->
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Constatações Gerais
+          </h3>
+          <p class="text-xs text-slate-400 mt-1">Insira relatos de ocupantes, histórico da edificação, intervenções ou reformas anteriores, e patologias recorrentes observadas de forma geral.</p>
+        </div>
+
+        <div class="p-5">
+          <!-- Reatividade: TextArea padrão 2c: blur-triggered saving -->
+          <textarea #constatacoesInput
+                    [value]="vistoriaAtiva()?.anamnese?.constatacoes || ''"
+                    (blur)="salvarConstatacoesAnamnese(constatacoesInput.value)"
+                    rows="8"
+                    class="w-full rounded-lg border border-slate-200 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all shadow-inner bg-slate-50/30"
+                    placeholder="Exemplo: De acordo com relato do síndico, houve uma impermeabilização na laje de cobertura há 5 anos. Há infiltrações recorrentes no subsolo durante períodos de chuvas fortes..."></textarea>
+          
+          <div class="flex justify-end mt-1.5">
+            <span class="text-[10px] text-slate-400 font-medium italic flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Salva automaticamente ao sair do campo
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anexos Gerais -->
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+              </svg>
+              Documentação e Anexos Gerais
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Fotos de placas antigas, documentos históricos, plantas baixas antigas, laudos anteriores etc.</p>
+          </div>
+
+          <!-- Input File invisível e botão de anexar -->
+          <div>
+            <input type="file" multiple #anamneseFileInput class="hidden" (change)="processarAnexoAnamnese(anamneseFileInput.files)">
+            <button (click)="anamneseFileInput.click()" class="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition-all shadow-sm cursor-pointer active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+              <span>Anexar Arquivos</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-5">
+          @if (!vistoriaAtiva()?.anamnese?.anexos || vistoriaAtiva()?.anamnese?.anexos?.length === 0) {
+            <div class="text-center py-8 text-slate-400">
+              <div class="text-3xl mb-1.5">📎</div>
+              <p class="text-xs font-medium">Nenhum anexo geral adicionado à Anamnese</p>
+              <p class="text-[10px] text-slate-400">Insira imagens ou documentos PDFs relevantes clicando em "Anexar Arquivos".</p>
+            </div>
+          } @else {
+            <div class="flex flex-wrap gap-3">
+              @for (anexo of vistoriaAtiva()?.anamnese?.anexos; track anexo.id) {
+                <div class="flex items-center gap-2.5 p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 transition-colors text-xs relative max-w-[320px] pr-8">
+                  
+                  <!-- Miniatura se imagem -->
+                  @if (anexo.tipo.startsWith('image/')) {
+                    <div class="w-12 h-12 rounded-lg border border-slate-300 bg-slate-200 overflow-hidden flex-shrink-0">
+                      <img [src]="anexoUrls()[anexo.id]" alt="Anexo" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                    </div>
+                  } @else {
+                    <!-- Ícone de Documento se PDF/Outro -->
+                    <div class="w-12 h-12 rounded-lg border border-slate-300 bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0 font-mono text-xs font-bold">
+                      PDF
+                    </div>
+                  }
+
+                  <!-- Detalhes do Anexo -->
+                  <div class="min-w-0">
+                    <p class="font-bold text-slate-800 truncate text-xs" [title]="anexo.nome">{{ anexo.nome }}</p>
+                    <p class="text-[9px] text-slate-400 font-mono mt-0.5">{{ formatarBytes(anexo.tamanho) }}</p>
+                  </div>
+
+                  <!-- Botão de Deletar Anexo Individual -->
+                  <button (click)="solicitarExcluirAnexoAnamnese(anexo.id)"
+                          class="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-lg border text-xs font-bold transition-all cursor-pointer"
+                          [class.bg-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                          [class.border-rose-600]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                          [class.text-white]="anexoPendenteConfirmacaoExclusao() === anexo.id"
+                          [class.bg-white]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                          [class.border-slate-200]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                          [class.text-slate-400]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                          [class.hover:text-rose-600]="anexoPendenteConfirmacaoExclusao() !== anexo.id"
+                          [title]="anexoPendenteConfirmacaoExclusao() === anexo.id ? 'Clique novamente para confirmar a exclusão' : 'Excluir anexo'">
+                    ✕
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
     </div>
   }
