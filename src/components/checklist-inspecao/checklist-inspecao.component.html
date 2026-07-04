@@ -954,14 +954,84 @@
                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
                                 </div>
                               </div>
-                              <div class="flex justify-end gap-1.5">
+
+                              <div class="grid grid-cols-2 gap-2">
+                                <div class="space-y-1">
+                                  <label class="block text-[9px] font-bold uppercase text-slate-500">Classificação (Tipo)</label>
+                                  <select #classTipoSelect
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                    <option value="INDETERMINADO" [selected]="f.classificacao?.tipo === 'INDETERMINADO'">INDETERMINADO</option>
+                                    <option value="ANOMALIA" [selected]="f.classificacao?.tipo === 'ANOMALIA'">ANOMALIA</option>
+                                    <option value="FALHA" [selected]="f.classificacao?.tipo === 'FALHA'">FALHA</option>
+                                  </select>
+                                </div>
+                                <div class="space-y-1">
+                                  <label class="block text-[9px] font-bold uppercase text-slate-500">Subtipo</label>
+                                  <input #classSubtipoInput [value]="f.classificacao?.subtipo || ''"
+                                         placeholder="Ex: Funcional, Endógena"
+                                         class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                </div>
+                              </div>
+
+                              <div class="space-y-1">
+                                <label class="block text-[9px] font-bold uppercase text-slate-500">Manifestação Patológica</label>
+                                <textarea #manifestacaoInput
+                                          placeholder="Ex: Fissuras verticais na base do pilar..."
+                                          rows="2"
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">{{ f.manifestacao || '' }}</textarea>
+                              </div>
+
+                              <div class="space-y-1">
+                                <label class="block text-[9px] font-bold uppercase text-slate-500">Causa Provável</label>
+                                <textarea #causaProvavelInput
+                                          placeholder="Ex: Infiltração de água, recalque diferencial..."
+                                          rows="2"
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">{{ f.causaProvavel || '' }}</textarea>
+                              </div>
+
+                              <div class="space-y-1">
+                                <label class="block text-[9px] font-bold uppercase text-slate-500">Recomendação Técnica</label>
+                                <textarea #recomendacaoInput
+                                          placeholder="Ex: Realizar injeção de poliuretano..."
+                                          rows="2"
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">{{ f.recomendacaoTecnica || '' }}</textarea>
+                              </div>
+
+                              <div class="space-y-1">
+                                <label class="block text-[9px] font-bold uppercase text-slate-500">Criticidade Sugerida</label>
+                                <select #criticidadeSelect
+                                        class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                  <option value="" [selected]="!f.criticidade">Não definida</option>
+                                  <option value="P1" [selected]="f.criticidade === 'P1'">P1</option>
+                                  <option value="P2" [selected]="f.criticidade === 'P2'">P2</option>
+                                  <option value="P3" [selected]="f.criticidade === 'P3'">P3</option>
+                                </select>
+                              </div>
+
+                              <div class="space-y-1 bg-slate-50 p-2 rounded border border-slate-200/50">
+                                <label class="block text-[9px] font-bold uppercase text-slate-500">Normas Aplicáveis (Normas sugeridas pela IA)</label>
+                                <div class="text-[10px] text-slate-600 space-y-1 font-mono">
+                                  @if (f.normasAplicaveis && f.normasAplicaveis.length > 0) {
+                                    @for (norma of f.normasAplicaveis; track norma.codigo) {
+                                      <div class="flex items-start gap-1">
+                                        <span class="font-bold text-sky-700 min-w-[70px]">{{ norma.codigo }}:</span>
+                                        <span>{{ norma.titulo }}</span>
+                                      </div>
+                                    }
+                                  } @else {
+                                    <span class="text-slate-400 italic">Nenhuma norma sugerida</span>
+                                  }
+                                </div>
+                              </div>
+
+                              <div class="flex justify-end gap-1.5 pt-1">
                                 <button type="button" (click)="fichaEmEdicaoId.set(null); itemDaFichaEmEdicaoId.set(null)"
                                         class="px-2 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-200 rounded transition-colors cursor-pointer border border-slate-200 bg-white">
                                   Cancelar
                                 </button>
-                                <button type="button" (click)="salvarCamposBasicosFicha(item.id, f.id, pavInput.value, ambInput.value); fichaEmEdicaoId.set(null); itemDaFichaEmEdicaoId.set(null)"
+                                <button type="button" (click)="salvarCamposBasicosFicha(item.id, f.id, pavInput.value, ambInput.value); salvarCamposDiagnosticoFicha(item.id, f.id, { classificacaoTipo: classTipoSelect.value, classificacaoSubtipo: classSubtipoInput.value, manifestacao: manifestacaoInput.value, causaProvavel: causaProvavelInput.value, recomendacaoTecnica: recomendacaoInput.value, criticidade: criticidadeSelect.value }); fichaEmEdicaoId.set(null); itemDaFichaEmEdicaoId.set(null)"
                                         class="px-2 py-1 text-[10px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded transition-colors cursor-pointer border border-sky-600">
-                                  Salvar
+                                  Concluir edição
                                 </button>
                               </div>
                             </div>

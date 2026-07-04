@@ -91,6 +91,12 @@ const SCHEMA_ANALISE_EVIDENCIA = {
     severitySugerida: { type: Type.STRING, enum: ['Mínimo', 'Regular', 'Crítico'] },
     correlacaoFotoPatologia: { type: Type.STRING, enum: ['CONFIRMADA', 'DIVERGENTE', 'INCONCLUSIVA'] },
     observacaoDivergencia: { type: Type.STRING },
+    classificacaoTipo: { type: Type.STRING, enum: ['ANOMALIA', 'FALHA', 'INDETERMINADO'] },
+    classificacaoSubtipo: { type: Type.STRING, enum: ['endogena','exogena','natural','funcional','planejamento','execucao','operacional','gerencial'] },
+    manifestacao: { type: Type.STRING },
+    causaProvavel: { type: Type.STRING },
+    recomendacaoTecnica: { type: Type.STRING },
+    criticidadeSugerida: { type: Type.STRING, enum: ['P1', 'P2', 'P3'] },
   },
   required: ['texto', 'severitySugerida', 'correlacaoFotoPatologia'],
 };
@@ -217,10 +223,20 @@ export class ChecklistInspecaoComponent implements OnInit {
   novoNivelInspecaoMetodologia = signal('');
   novoNivelInspecaoJustificativa = signal('');
 
+  private resolverOcorrenciaEmEdicao(item: ChecklistItem): FichaDano | null {
+    if (this.itemDaFichaEmEdicaoId() === item.id && this.fichaEmEdicaoId()) {
+      return item.ocorrencias?.find(f => f.id === this.fichaEmEdicaoId()) ?? null;
+    }
+    return null;
+  }
+
   obterOuCriarOcorrenciaAtiva(item: ChecklistItem): FichaDano {
     if (!item.ocorrencias) {
       item.ocorrencias = [];
     }
+    const emEdicao = this.resolverOcorrenciaEmEdicao(item);
+    if (emEdicao) return emEdicao;
+
     if (item.ocorrencias.length === 0) {
       const ativa = this.vistoriaAtiva();
       const proximoNumero = (ativa?.contadorFichas ?? 0) + 1;
@@ -240,16 +256,15 @@ export class ChecklistInspecaoComponent implements OnInit {
   }
 
   obterOcorrenciaAtiva(item: ChecklistItem): FichaDano {
-    if (item.ocorrencias && item.ocorrencias.length > 0) {
-      return item.ocorrencias[0];
-    }
-    return {
+    const emEdicao = this.resolverOcorrenciaEmEdicao(item);
+    if (emEdicao) return emEdicao;
+    return item.ocorrencias?.[0] ?? {
       id: '',
-      numeroFicha: 1,
+      numeroFicha: 0,
       notes: '',
       dateCreated: '',
       dateUpdated: ''
-    };
+    } as FichaDano;
   }
 
   criarNovaOcorrencia(itemId: string): void {
@@ -322,6 +337,46 @@ export class ChecklistInspecaoComponent implements OnInit {
       const ocorrenciasAtualizadas = (item.ocorrencias ?? []).map(f =>
         f.id === fichaId ? { ...f, pavimento, ambiente, dateUpdated: new Date().toISOString() } : f
       );
+      return { ...item, ocorrencias: ocorrenciasAtualizadas };
+    });
+
+    this.atualizarItensVistoriaAtiva(novosItens);
+  }
+
+  salvarCamposDiagnosticoFicha(
+    itemId: string,
+    fichaId: string,
+    campos: Partial<{
+      classificacaoTipo: 'ANOMALIA' | 'FALHA' | 'INDETERMINADO';
+      classificacaoSubtipo: string;
+      manifestacao: string;
+      causaProvavel: string;
+      recomendacaoTecnica: string;
+      criticidade: 'P1' | 'P2' | 'P3' | '';
+    }>
+  ): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return;
+
+    const novosItens = ativa.items.map(item => {
+      if (item.id !== itemId) return item;
+      const ocorrenciasAtualizadas = (item.ocorrencias ?? []).map(f => {
+        if (f.id === fichaId) {
+          const novoTipo = 'classificacaoTipo' in campos ? campos.classificacaoTipo : (f.classificacao?.tipo ?? 'INDETERMINADO');
+          const novoSubtipo = 'classificacaoSubtipo' in campos ? campos.classificacaoSubtipo : f.classificacao?.subtipo;
+          
+          return {
+            ...f,
+            classificacao: { tipo: novoTipo as any, subtipo: novoSubtipo },
+            manifestacao: 'manifestacao' in campos ? campos.manifestacao : f.manifestacao,
+            causaProvavel: 'causaProvavel' in campos ? campos.causaProvavel : f.causaProvavel,
+            recomendacaoTecnica: 'recomendacaoTecnica' in campos ? campos.recomendacaoTecnica : f.recomendacaoTecnica,
+            criticidade: 'criticidade' in campos ? (campos.criticidade || undefined) as any : f.criticidade,
+            dateUpdated: new Date().toISOString()
+          };
+        }
+        return f;
+      });
       return { ...item, ocorrencias: ocorrenciasAtualizadas };
     });
 
@@ -998,6 +1053,17 @@ export class ChecklistInspecaoComponent implements OnInit {
           oc.diagnostico_ia = diag.texto;
           oc.correlacaoFotoPatologia = diag.correlacaoFotoPatologia;
           oc.observacaoDivergencia = diag.observacaoDivergencia;
+
+          if (diag.correlacaoFotoPatologia === 'CONFIRMADA') {
+            if (diag.classificacaoTipo) {
+              oc.classificacao = { tipo: diag.classificacaoTipo as any, subtipo: diag.classificacaoSubtipo as any };
+            }
+            oc.manifestacao = diag.manifestacao || oc.manifestacao;
+            oc.causaProvavel = diag.causaProvavel || oc.causaProvavel;
+            oc.recomendacaoTecnica = diag.recomendacaoTecnica || oc.recomendacaoTecnica;
+            oc.criticidade = (diag.criticidadeSugerida as any) || oc.criticidade;
+            oc.normasAplicaveis = this.dataService.getNormasTipologia(it.systemTitle, it.typologyTitle);
+          }
           return it;
         });
       }
@@ -1219,7 +1285,13 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     base64: string
   ): Promise<{ texto: string; severitySugerida?: 'Mínimo' | 'Regular' | 'Crítico';
             correlacaoFotoPatologia?: 'CONFIRMADA' | 'DIVERGENTE' | 'INCONCLUSIVA';
-            observacaoDivergencia?: string } | null> {
+            observacaoDivergencia?: string;
+            classificacaoTipo?: string;
+            classificacaoSubtipo?: string;
+            manifestacao?: string;
+            causaProvavel?: string;
+            recomendacaoTecnica?: string;
+            criticidadeSugerida?: string; } | null> {
     try {
       const prompt = `Você é um engenheiro civil perito especializado em inspeção predial de acordo com a NBR 16747.
   Uma foto de evidência foi anexada ao seguinte item de checklist marcado como não conforme:
@@ -1238,7 +1310,16 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
   Forneça também o grau de risco sugerido conforme a NBR 16747 (estritamente 'Mínimo', 'Regular' ou 'Crítico'),
   baseado APENAS no que é visível e correlacionado — em caso DIVERGENTE ou INCONCLUSIVO, sugira o grau com base
-  na descrição do item, sinalizando a limitação no texto.`;
+  na descrição do item, sinalizando a limitação no texto.
+
+  Se correlacaoFotoPatologia for 'CONFIRMADA', forneça também, com base estritamente no que é visível na imagem e no contexto do item:
+  - classificacaoTipo: 'ANOMALIA' (perda de desempenho por projeto/execução/vida útil/fatores externos) ou 'FALHA' (perda de desempenho por uso/operação/manutenção) — use 'INDETERMINADO' se não for possível classificar com segurança.
+  - classificacaoSubtipo: se ANOMALIA, um de endogena/exogena/natural/funcional; se FALHA, um de planejamento/execucao/operacional/gerencial.
+  - manifestacao: descrição objetiva do que se observa na imagem.
+  - causaProvavel: hipótese técnica da origem, com base no que é visível.
+  - recomendacaoTecnica: ação corretiva recomendada, em linguagem técnica objetiva.
+  - criticidadeSugerida: 'P1' (crítico — risco à saúde/segurança/funcionalidade), 'P2' (médio) ou 'P3' (mínimo), conforme os patamares da NBR 16747.
+  Se correlacaoFotoPatologia for 'DIVERGENTE' ou 'INCONCLUSIVA', deixe esses 6 campos como string vazia — não invente classificação para uma foto que não corresponde ao item ou que não permite conclusão.`;
 
       const textPart = { text: prompt };
       const imagePart = {
@@ -1254,6 +1335,12 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
         severitySugerida: 'Mínimo' | 'Regular' | 'Crítico';
         correlacaoFotoPatologia: 'CONFIRMADA' | 'DIVERGENTE' | 'INCONCLUSIVA';
         observacaoDivergencia?: string;
+        classificacaoTipo?: string;
+        classificacaoSubtipo?: string;
+        manifestacao?: string;
+        causaProvavel?: string;
+        recomendacaoTecnica?: string;
+        criticidadeSugerida?: string;
       }>(contents, SCHEMA_ANALISE_EVIDENCIA);
 
       return {
@@ -1261,6 +1348,12 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
         severitySugerida: result.severitySugerida,
         correlacaoFotoPatologia: result.correlacaoFotoPatologia,
         observacaoDivergencia: result.observacaoDivergencia,
+        classificacaoTipo: result.classificacaoTipo,
+        classificacaoSubtipo: result.classificacaoSubtipo,
+        manifestacao: result.manifestacao,
+        causaProvavel: result.causaProvavel,
+        recomendacaoTecnica: result.recomendacaoTecnica,
+        criticidadeSugerida: result.criticidadeSugerida,
       };
     } catch (e) {
       console.error('Erro na chamada do Gemini:', e);
@@ -1308,6 +1401,17 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           oc.diagnostico_ia = diag.texto;
           oc.correlacaoFotoPatologia = diag.correlacaoFotoPatologia;
           oc.observacaoDivergencia = diag.observacaoDivergencia;
+
+          if (diag.correlacaoFotoPatologia === 'CONFIRMADA') {
+            if (diag.classificacaoTipo) {
+              oc.classificacao = { tipo: diag.classificacaoTipo as any, subtipo: diag.classificacaoSubtipo as any };
+            }
+            oc.manifestacao = diag.manifestacao || oc.manifestacao;
+            oc.causaProvavel = diag.causaProvavel || oc.causaProvavel;
+            oc.recomendacaoTecnica = diag.recomendacaoTecnica || oc.recomendacaoTecnica;
+            oc.criticidade = (diag.criticidadeSugerida as any) || oc.criticidade;
+            oc.normasAplicaveis = this.dataService.getNormasTipologia(it.systemTitle, it.typologyTitle);
+          }
           return it;
         });
       }
