@@ -958,29 +958,29 @@
                               <div class="grid grid-cols-2 gap-2">
                                 <div class="space-y-1">
                                   <label class="block text-[9px] font-bold uppercase text-slate-500">Classificação (Tipo)</label>
-                                  <select #classTipoSelect
+                                  <select #classTipoSelect [value]="f.classificacao?.tipo || 'INDETERMINADO'"
                                           class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
-                                    <option value="INDETERMINADO" [selected]="f.classificacao?.tipo === 'INDETERMINADO'">INDETERMINADO</option>
-                                    <option value="ANOMALIA" [selected]="f.classificacao?.tipo === 'ANOMALIA'">ANOMALIA</option>
-                                    <option value="FALHA" [selected]="f.classificacao?.tipo === 'FALHA'">FALHA</option>
+                                    <option value="INDETERMINADO">INDETERMINADO</option>
+                                    <option value="ANOMALIA">ANOMALIA</option>
+                                    <option value="FALHA">FALHA</option>
                                   </select>
                                 </div>
                                 <div class="space-y-1">
                                   <label class="block text-[9px] font-bold uppercase text-slate-500">Subtipo</label>
-                                  <select #classSubtipoInput
+                                  <select #classSubtipoInput [value]="f.classificacao?.subtipo || ''"
                                           class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
-                                    <option value="" [selected]="!f.classificacao?.subtipo">Selecione…</option>
+                                    <option value="">Selecione…</option>
                                     <optgroup label="Anomalia">
-                                      <option value="endogena" [selected]="f.classificacao?.subtipo === 'endogena'">Endógena</option>
-                                      <option value="exogena" [selected]="f.classificacao?.subtipo === 'exogena'">Exógena</option>
-                                      <option value="natural" [selected]="f.classificacao?.subtipo === 'natural'">Natural</option>
-                                      <option value="funcional" [selected]="f.classificacao?.subtipo === 'funcional'">Funcional</option>
+                                      <option value="endogena">Endógena</option>
+                                      <option value="exogena">Exógena</option>
+                                      <option value="natural">Natural</option>
+                                      <option value="funcional">Funcional</option>
                                     </optgroup>
                                     <optgroup label="Falha">
-                                      <option value="planejamento" [selected]="f.classificacao?.subtipo === 'planejamento'">Planejamento</option>
-                                      <option value="execucao" [selected]="f.classificacao?.subtipo === 'execucao'">Execução</option>
-                                      <option value="operacional" [selected]="f.classificacao?.subtipo === 'operacional'">Operacional</option>
-                                      <option value="gerencial" [selected]="f.classificacao?.subtipo === 'gerencial'">Gerencial</option>
+                                      <option value="planejamento">Planejamento</option>
+                                      <option value="execucao">Execução</option>
+                                      <option value="operacional">Operacional</option>
+                                      <option value="gerencial">Gerencial</option>
                                     </optgroup>
                                   </select>
                                 </div>
@@ -988,36 +988,36 @@
 
                               <div class="space-y-1">
                                 <label class="block text-[9px] font-bold uppercase text-slate-500">Manifestação Patológica</label>
-                                <textarea #manifestacaoInput
+                                <textarea #manifestacaoInput [value]="f.manifestacao || ''"
                                           placeholder="Ex: Fissuras verticais na base do pilar..."
                                           rows="2"
-                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">{{ f.manifestacao || '' }}</textarea>
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"></textarea>
                               </div>
 
                               <div class="space-y-1">
                                 <label class="block text-[9px] font-bold uppercase text-slate-500">Causa Provável</label>
-                                <textarea #causaProvavelInput
+                                <textarea #causaProvavelInput [value]="f.causaProvavel || ''"
                                           placeholder="Ex: Infiltração de água, recalque diferencial..."
                                           rows="2"
-                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">{{ f.causaProvavel || '' }}</textarea>
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"></textarea>
                               </div>
 
                               <div class="space-y-1">
                                 <label class="block text-[9px] font-bold uppercase text-slate-500">Recomendação Técnica</label>
-                                <textarea #recomendacaoInput
+                                <textarea #recomendacaoInput [value]="f.recomendacaoTecnica || ''"
                                           placeholder="Ex: Realizar injeção de poliuretano..."
                                           rows="2"
-                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">{{ f.recomendacaoTecnica || '' }}</textarea>
+                                          class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"></textarea>
                               </div>
 
                               <div class="space-y-1">
                                 <label class="block text-[9px] font-bold uppercase text-slate-500">Criticidade Sugerida</label>
-                                <select #criticidadeSelect
+                                <select #criticidadeSelect [value]="f.criticidade || ''"
                                         class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500">
-                                  <option value="" [selected]="!f.criticidade">Não definida</option>
-                                  <option value="P1" [selected]="f.criticidade === 'P1'">P1</option>
-                                  <option value="P2" [selected]="f.criticidade === 'P2'">P2</option>
-                                  <option value="P3" [selected]="f.criticidade === 'P3'">P3</option>
+                                  <option value="">Não definida</option>
+                                  <option value="P1">P1</option>
+                                  <option value="P2">P2</option>
+                                  <option value="P3">P3</option>
                                 </select>
                               </div>
 
