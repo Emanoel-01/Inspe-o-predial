@@ -1715,6 +1715,20 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       }
     }
 
+    // Pré-carregar imagens da anamnese como data URL base64 (object URL não funciona na impressão)
+    const anexoImagensMap = new Map<string, string>();   // anexoId -> dataUrl
+    for (const anexo of (ativa.anamnese?.anexos ?? [])) {
+      if (anexo.tipo.startsWith('image/')) {
+        try {
+          const ab = await this.dbService.getAnexoBlob(anexo.id);
+          if (ab?.blob) {
+            const base64 = await this.blobParaBase64(ab.blob);
+            anexoImagensMap.set(anexo.id, `data:${ab.mimeType || anexo.tipo};base64,${base64}`);
+          }
+        } catch { /* anexo ausente — ignora */ }
+      }
+    }
+
     const estatisticas = this.estatisticasAtivas();
     const form = { buildingName: ativa.buildingName, address: ativa.address };
     
@@ -1768,6 +1782,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     }
 
     const secao4 = this.gerarSecao4Html(ativa);
+    const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
     const secao9 = this.gerarSecao9Html(itens);
@@ -2238,6 +2253,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
           <!-- SEÇÃO 4 — Caracterização da Edificação -->
           ${secao4}
+
+          <!-- ANAMNESE — Histórico e Constatações -->
+          ${anamnese}
 
           <!-- SEÇÃO 5 — Síntese -->
           <h2 class="sec-h"><span class="sn">5.</span> Síntese da Inspeção</h2>
@@ -2805,6 +2823,103 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
         ${tabelasHtml}
       </div>
     `;
+  }
+
+  private gerarAnamneseHtml(ativa: Vistoria, anexoImagensMap: Map<string, string>): string {
+    if (!ativa.anamnese) return '';
+    const constatacoes = Array.isArray(ativa.anamnese.constatacoes) ? ativa.anamnese.constatacoes : [];
+    const anexos = Array.isArray(ativa.anamnese.anexos) ? ativa.anamnese.anexos : [];
+    if (constatacoes.length === 0 && anexos.length === 0) return '';
+
+    let html = `
+      <div style="page-break-before:always;margin-top:8mm;">
+        <h2 class="sec-h"><span class="sn">•</span> Anamnese — Histórico e Constatações</h2>
+    `;
+
+    const labels: Record<string, string> = {
+      RELATO_OCUPANTE: 'Relato de ocupante',
+      HISTORICO: 'Histórico da edificação',
+      INTERVENCAO: 'Intervenção / reforma anterior',
+      PATOLOGIA_RECORRENTE: 'Patologia recorrente observada',
+      OUTROS: 'Outros'
+    };
+
+    if (constatacoes.length > 0) {
+      html += `<div style="margin-bottom:6mm;">`;
+      for (const c of constatacoes) {
+        const label = labels[c.tipo] || c.tipo;
+        
+        let condicionalHtml = '';
+        if (c.tipo === 'RELATO_OCUPANTE') {
+          const idStr = c.identificacao ? ` · Vínculo/ID: ${c.identificacao}` : '';
+          condicionalHtml = `<div style="font-size:8pt;color:#4A5A66;margin-top:1.5mm;font-weight:600;">Ocupante: ${c.nomeOcupante}${idStr}</div>`;
+        } else if (c.tipo === 'HISTORICO' || c.tipo === 'INTERVENCAO') {
+          condicionalHtml = `<div style="font-size:8pt;color:#4A5A66;margin-top:1.5mm;font-weight:600;">Data/período: ${c.data}</div>`;
+        } else if (c.tipo === 'PATOLOGIA_RECORRENTE') {
+          condicionalHtml = `<div style="font-size:8pt;color:#4A5A66;margin-top:1.5mm;font-weight:600;">Verificação/relato: ${c.fonteRelato}</div>`;
+        }
+
+        // Figuras vinculadas
+        let imagensHtml = '';
+        const imagensVinculadas = anexos.filter(a => a.constatacaoId === c.id && a.tipo.startsWith('image/'));
+        for (const img of imagensVinculadas) {
+          const dataUrl = anexoImagensMap.get(img.id);
+          if (dataUrl) {
+            imagensHtml += `
+              <figure style="margin:2.5mm 0;page-break-inside:avoid;">
+                <img src="${dataUrl}" style="max-width:100%;max-height:70mm;object-fit:contain;border:1px solid #D8D0C6;border-radius:4px;display:block;">
+                <figcaption style="font-size:7.5pt;color:#6B7280;margin-top:1mm;">${img.legenda || img.nome}</figcaption>
+              </figure>
+            `;
+          }
+        }
+
+        html += `
+          <div style="page-break-inside:avoid;border:1px solid #E2E8F0;background:#F8FAFC;border-radius:6px;padding:3.5mm;margin-bottom:4mm;">
+            <div style="display:inline-block;background:#EEF3FA;color:#2C5AA0;font-size:7pt;font-weight:700;text-transform:uppercase;padding:1mm 2.5mm;border-radius:3px;margin-bottom:1.5mm;">
+              ${label}
+            </div>
+            <p style="font-size:9pt;line-height:1.55;color:#2b2b2b;margin:1.5mm 0;white-space:pre-line;">${c.descricao}</p>
+            ${condicionalHtml}
+            ${imagensHtml}
+          </div>
+        `;
+      }
+      html += `</div>`;
+    }
+
+    // Registro fotográfico complementar (imagens sem vínculo)
+    const idsValidos = new Set(constatacoes.map(c => c.id));
+    const imagensSemVinculo = anexos.filter(a => a.tipo.startsWith('image/') && (!a.constatacaoId || !idsValidos.has(a.constatacaoId)));
+    
+    if (imagensSemVinculo.length > 0) {
+      let galeriaHtml = '';
+      for (const img of imagensSemVinculo) {
+        const dataUrl = anexoImagensMap.get(img.id);
+        if (dataUrl) {
+          galeriaHtml += `
+            <figure style="margin:4mm 0;page-break-inside:avoid;">
+              <img src="${dataUrl}" style="max-width:100%;max-height:70mm;object-fit:contain;border:1px solid #D8D0C6;border-radius:4px;display:block;">
+              <figcaption style="font-size:7.5pt;color:#6B7280;margin-top:1.5mm;font-weight:500;">${img.legenda || img.nome}</figcaption>
+            </figure>
+          `;
+        }
+      }
+
+      if (galeriaHtml) {
+        html += `
+          <div style="page-break-inside:avoid;margin-top:6mm;">
+            <h3 style="font-size:10pt;font-weight:700;color:#132A41;margin:4mm 0 3mm;border-bottom:1.5px solid #132A41;padding-bottom:1mm;">
+              Registro fotográfico complementar
+            </h3>
+            ${galeriaHtml}
+          </div>
+        `;
+      }
+    }
+
+    html += `</div>`;
+    return html;
   }
 
   private gerarSecao7Html(

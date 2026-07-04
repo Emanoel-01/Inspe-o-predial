@@ -2006,12 +2006,11 @@
                     @if (constatacoesLista().length > 0) {
                       <div class="space-y-1">
                         <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Vincular a Constatação</label>
-                        <select [value]="anexo.constatacaoId || ''"
-                                (change)="vincularAnexoConstatacao(anexo.id, $any($event.target).value)"
+                        <select (change)="vincularAnexoConstatacao(anexo.id, $any($event.target).value)"
                                 class="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all bg-white shadow-sm">
-                          <option value="">— sem vínculo —</option>
+                          <option value="" [selected]="!anexo.constatacaoId">— sem vínculo —</option>
                           @for (c of constatacoesLista(); track c.id) {
-                            <option [value]="c.id">{{ rotuloConstatacaoBreve(c) }}</option>
+                            <option [value]="c.id" [selected]="c.id === anexo.constatacaoId">{{ rotuloConstatacaoBreve(c) }}</option>
                           }
                         </select>
                       </div>
