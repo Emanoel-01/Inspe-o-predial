@@ -1771,6 +1771,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
     const secao9 = this.gerarSecao9Html(itens);
+    const anexoI = this.gerarAnexoINorteadoresHtml(ativa);
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -2291,6 +2292,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- SEÇÃO 9 — Plano de Ação e Memorial Descritivo -->
           ${secao9}
 
+          <!-- ANEXO I — Documentos Norteadores -->
+          ${anexoI}
+
           <!-- RODAPÉ P4 -->
           <div class="doc-footer">
             <span class="prov-tag">PROVISÓRIO</span>
@@ -2664,6 +2668,143 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     html = html.replace(/\n{2,}/g, `</p><p style="${pStyle}">`);
 
     return `<p style="${pStyle}">${html}</p>`;
+  }
+
+  private gerarAnexoINorteadoresHtml(ativa: Vistoria): string {
+    const docs = ativa.documentosNorteadores ?? [];
+    if (docs.length === 0) {
+      return `
+        <h2 class="sec-h" style="margin-top:8mm;page-break-before:always;"><span class="sn">A-I</span> Verificação de Documentos Norteadores</h2>
+        <p style="font-size:9pt;color:#6B7280;font-style:italic;margin-bottom:6mm;">Nenhum documento norteador registrado nesta vistoria.</p>
+      `;
+    }
+
+    const total = docs.length;
+    const naoAplica       = docs.filter(d => d.disponibilidade === 'NA').length;
+    const aAvaliar        = docs.filter(d => d.disponibilidade === 'A_AVALIAR').length;
+    const disponibilizados= docs.filter(d => d.disponibilidade === 'DD').length;
+    const naoDisponib     = docs.filter(d => d.disponibilidade === 'DND').length;
+    const conformes       = docs.filter(d => d.disponibilidade === 'DD' && d.conformidade === 'EC').length;
+    const naoConformes    = docs.filter(d => d.disponibilidade === 'DD' && d.conformidade === 'NC').length;
+    const aplicaveis      = total - naoAplica;
+
+    let veredito: string;
+    let vereditoCor = '#6B7280';
+    if (aplicaveis === 0) {
+      veredito = 'não se aplica (nenhum documento norteador aplicável à edificação)';
+    } else if (disponibilizados === aplicaveis && naoConformes === 0 && aAvaliar === 0) {
+      veredito = 'CONFORMIDADE';
+      vereditoCor = '#1E7A46';
+    } else if (disponibilizados === 0) {
+      veredito = 'NÃO CONFORMIDADE';
+      vereditoCor = '#B23A48';
+    } else {
+      veredito = 'NÃO CONFORMIDADE PARCIAL';
+      vereditoCor = '#B23A48';
+    }
+
+    let naoAplicaClausula = naoAplica > 0 ? `, dos quais ${naoAplica} não se aplicam à edificação` : '';
+    let naoDisponibClausula = naoDisponib > 0 ? ` e ${naoDisponib} não disponibilizados` : '';
+    let aAvaliarClausula = aAvaliar > 0 ? `, com ${aAvaliar} ainda pendente(s) de avaliação` : '';
+
+    const sintetico = `Foram inventariados ${total} documentos norteadores${naoAplicaClausula}. ` +
+      `Dos ${aplicaveis} documentos aplicáveis, ${disponibilizados} foram disponibilizados pelo responsável legal${naoDisponibClausula}${aAvaliarClausula}. ` +
+      `Dentre os disponibilizados, ${conformes} encontra(m)-se em conformidade e ${naoConformes} em não conformidade. ` +
+      `Diante do exposto, verifica-se que a edificação encontra-se em <strong style="color:${vereditoCor};">${veredito}</strong> ` +
+      `com as boas práticas de gestão documental do uso, operação e manutenção, nos termos das ABNT NBR 5674 e NBR 14037.`;
+
+    const thS = 'background:#2C5AA0;color:#fff;padding:1.5mm 3mm;font-size:7.5pt;font-weight:700;text-align:left;border:1px solid #1a3f70;';
+    const tdS = 'padding:1.5mm 3mm;font-size:8pt;border:1px solid #D8D0C6;vertical-align:top;';
+
+    const gruposUnicos: string[] = [];
+    docs.forEach(d => {
+      const g = d.grupo || 'Geral';
+      if (!gruposUnicos.includes(g)) {
+        gruposUnicos.push(g);
+      }
+    });
+
+    const labelDisp: Record<string, string> = {
+      'A_AVALIAR': 'A avaliar',
+      'DD': 'Disponibilizado',
+      'DND': 'Não disponibilizado',
+      'NA': 'Não se aplica'
+    };
+
+    const labelConf: Record<string, string> = {
+      'EC': 'Em conformidade',
+      'NC': 'Não conformidade'
+    };
+
+    let tabelasHtml = '';
+    for (const g of gruposUnicos) {
+      const itensDoGrupo = docs.filter(d => (d.grupo || 'Geral') === g);
+      let linhasHtml = '';
+      let isEven = false;
+      for (const item of itensDoGrupo) {
+        const bg = isEven ? '#F7F5F0' : '#ffffff';
+        isEven = !isEven;
+
+        let cellDispBg = '#fff';
+        let cellDispFg = '#333';
+        if (item.disponibilidade === 'NA') { cellDispBg = '#f1f1f1'; cellDispFg = '#777'; }
+        else if (item.disponibilidade === 'A_AVALIAR') { cellDispBg = '#fdf6e2'; cellDispFg = '#b58900'; }
+        else if (item.disponibilidade === 'DND') { cellDispBg = '#fdf2f2'; cellDispFg = '#c81e1e'; }
+        else if (item.disponibilidade === 'DD') { cellDispBg = '#f3faf7'; cellDispFg = '#0e6251'; }
+
+        let cellConfBg = '#fff';
+        let cellConfFg = '#333';
+        let confText = '—';
+        if (item.disponibilidade === 'DD') {
+          if (item.conformidade === 'EC') { cellConfBg = '#eafaf1'; cellConfFg = '#1e7a46'; confText = labelConf['EC']; }
+          else if (item.conformidade === 'NC') { cellConfBg = '#fdf2f2'; cellConfFg = '#b23a48'; confText = labelConf['NC']; }
+          else { cellConfBg = '#fdfcf0'; cellConfFg = '#b58900'; confText = 'Pendente'; }
+        }
+
+        const anexosCount = item.anexos?.length ? `${item.anexos.length} anexo(s)` : '—';
+
+        linhasHtml += `
+          <tr style="background:${bg}">
+            <td style="${tdS}">
+              <div style="font-weight:600;color:#1A2A38;margin-bottom:0.5mm;">${item.descricao}</div>
+              ${item.observacao ? `<div style="font-size:7.5pt;color:#6B7280;line-height:1.3">${item.observacao}</div>` : ''}
+            </td>
+            <td style="${tdS}background:${cellDispBg};color:${cellDispFg};font-weight:600;">${labelDisp[item.disponibilidade] || item.disponibilidade}</td>
+            <td style="${tdS}background:${cellConfBg};color:${cellConfFg};font-weight:600;">${confText}</td>
+            <td style="${tdS}">${anexosCount}</td>
+          </tr>
+        `;
+      }
+
+      tabelasHtml += `
+        <div style="margin-bottom:6mm;page-break-inside:avoid;">
+          <h3 style="font-size:9.5pt;font-weight:700;color:#132A41;margin:4mm 0 2mm;border-bottom:1.5px solid #132A41;padding-bottom:0.5mm;">${g}</h3>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:2mm;">
+            <thead>
+              <tr>
+                <th style="${thS}width:45%;">Documento</th>
+                <th style="${thS}width:20%;">Disponibilidade</th>
+                <th style="${thS}width:20%;">Conformidade</th>
+                <th style="${thS}width:15%;">Anexos</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${linhasHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="page-break-before:always;margin-top:8mm;">
+        <h2 class="sec-h"><span class="sn">A-I</span> Verificação de Documentos Norteadores</h2>
+        <p style="font-size:9pt;line-height:1.6;text-align:justify;color:#2b2b2b;margin:2mm 0 5mm;">
+          ${sintetico}
+        </p>
+        ${tabelasHtml}
+      </div>
+    `;
   }
 
   private gerarSecao7Html(
