@@ -2303,10 +2303,13 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- CAPA P4 -->
           <div class="capa">
             <div class="capa-logo-wrap">
-              <div class="capa-logo-mark">P4</div>
+              ${profile.companyLogoBase64
+                ? `<img src="${profile.companyLogoBase64}" style="max-height:22mm;max-width:60mm;object-fit:contain;">`
+                : `<div class="capa-logo-mark">${(profile.companyName || 'P4').slice(0,2).toUpperCase()}</div>`
+              }
               <div>
-                <div class="capa-logo">PREDIAL 4.0</div>
-                <div class="capa-logo-sub">LAUDOS TÉCNICOS ASSISTIDOS</div>
+                <div class="capa-logo">${profile.companyName || 'Predial 4.0'}</div>
+                <div class="capa-logo-sub">Ecossistema Predial 4.0</div>
               </div>
             </div>
             <div class="capa-titulo">
@@ -2406,6 +2409,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             return html;
           })()}
 
+          <!-- 7.0 Caracterização do Objeto da Inspeção -->
+          ${secao4}
+
           <!-- Síntese da Inspeção -->
           <h2 class="sec-h">Síntese da Inspeção</h2>
           <div class="sintese-grid">
@@ -2452,9 +2458,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
           <!-- Anamnese — Histórico e Constatações -->
           ${anamnese}
-
-          <!-- 7.0 Caracterização do Objeto da Inspeção -->
-          ${secao4}
 
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
