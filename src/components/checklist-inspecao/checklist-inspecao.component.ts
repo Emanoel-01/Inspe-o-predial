@@ -2202,13 +2202,12 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       { href: 'sec-11', num: '11.0', label: 'Avaliação da Manutenção e Uso' },
       { href: 'sec-12', num: '12.0', label: 'Avaliação do Grau de Criticidade' },
       { href: 'sec-13', num: '13.0', label: 'Conclusões e Considerações Finais' },
-      { href: 'sec-15', num: '15.0', label: 'Encerramento e Assinatura' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
+      { href: 'sec-15', num: '15.0', label: 'Encerramento e Assinatura' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
       { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
       { href: 'anexo-3', label: 'Anexo III — Mapeamento de Danos' },
-      { href: 'anexo-4', label: 'Anexo IV — ART / RRT' },
-      { href: 'anexo-6', label: 'Anexo VI — Orçamento de Referência' }
+      { href: 'anexo-4', label: 'Anexo IV — ART / RRT' }
     ];
     const sumario = this.gerarSumarioHtml(sumarioEntries);
 
@@ -2885,11 +2884,11 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 13.0 Conclusões e Considerações Finais -->
           ${conclusoes}
 
-          <!-- 15.0 Encerramento e Assinatura -->
-          ${encerramento}
-
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
+
+          <!-- 15.0 Encerramento e Assinatura -->
+          ${encerramento}
 
           <!-- Anexo I — Verificação de Documentos Norteadores -->
           ${anexoI}
@@ -2902,9 +2901,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
           <!-- Anexo IV — ART / RRT -->
           ${anexoIV}
-
-          <!-- Anexo VI — Orçamento de Referência -->
-          ${secao8}
 
           <!-- Selo final — sempre a última peça do documento -->
           <div style="text-align:center; margin-top:6mm;">

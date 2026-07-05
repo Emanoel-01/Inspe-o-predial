@@ -1,6 +1,6 @@
 <!-- LOGIN VIEW -->
 @if (showLogin()) {
-  <app-login (loginSuccess)="handleLoginSuccess()" (loginAsGuest)="handleGuestAccess()" />
+  <app-login (loginSuccess)="onLoginSuccess($event)" (loginAsGuest)="handleGuestAccess()"></app-login>
 } @else {
   <!-- MAIN APP VIEW -->
   <div class="font-sans text-slate-800 antialiased bg-slate-50 min-h-screen">
@@ -18,7 +18,7 @@
         </div>
         
         <nav class="flex flex-col space-y-1.5">
-          @for (item of navItems; track item.id) {
+          @for (item of navItemsVisiveis(); track item.id) {
             <button 
               (click)="setActiveView(item.id)" 
               [disabled]="!isLoggedIn() && item.id !== 'visao-geral'"
@@ -157,6 +157,7 @@
           @switch (activeView()) {
             @case ('visao-geral') { <app-visao-geral /> }
             @case ('checklist') { <app-checklist-inspecao /> }
+            @case ('orcamento') { <app-orcamento-roadmap /> }
             @case ('admin') { <app-admin-panel /> }
             @default { <app-visao-geral /> }
           }
@@ -171,6 +172,22 @@
 <!-- MODALS -->
 <app-user-profile-modal [isOpen]="isProfileModalOpen()" [profileData]="userProfile()" (closeModal)="isProfileModalOpen.set(false)" (profileUpdate)="onProfileUpdate($event)" (logout)="handleLogout()" />
 <app-toast />
+
+@if (mostrarPinAdm()) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-sm">
+      <h3 class="text-lg font-bold text-slate-900 mb-2">Confirmação de Acesso</h3>
+      <p class="text-sm text-slate-500 mb-4">Digite o PIN para liberar as Ferramentas Admin.</p>
+      <input #pinInput type="password" inputmode="numeric" maxlength="6"
+             class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4 text-center text-lg tracking-widest"
+             placeholder="••••">
+      <div class="flex gap-2">
+        <button (click)="cancelarPinAdm()" class="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600 font-semibold">Cancelar</button>
+        <button (click)="confirmarPinAdm(pinInput.value)" class="flex-1 py-2 rounded-lg bg-sky-600 text-white font-semibold">Confirmar</button>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- TOUR GUIDADO INTEGRADO -->
 @if (isTourActive()) {
