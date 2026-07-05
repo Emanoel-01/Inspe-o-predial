@@ -1817,6 +1817,18 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const anexoI = this.gerarAnexoINorteadoresHtml(ativa);
     const relacaoAnexos = this.gerarRelacaoAnexosHtml(ativa);
 
+    const sumarioEntries = [
+      { href: 'sec-1',  num: '1.0',  label: 'Apresentação' },
+      { href: 'sec-4',  num: '4.0',  label: 'Normativo Técnico Aplicado' },
+      { href: 'sec-7',  num: '7.0',  label: 'Caracterização do Objeto da Inspeção' },
+      { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
+      { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
+      { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
+      { href: 'anexo-3', label: 'Anexo III — Mapeamento de Danos' },
+      { href: 'anexo-6', label: 'Anexo VI — Orçamento de Referência' }
+    ];
+    const sumario = this.gerarSumarioHtml(sumarioEntries);
+
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -1974,7 +1986,105 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
               padding-bottom: 2mm;
               margin: 8mm 0 4mm 0;
             }
-            .sec-h .sn { color: #B5642A; }
+             .sec-h .sn { color: #B5642A; }
+
+            /* === ANEXO HEADING === */
+            .anexo-h {
+              display: flex;
+              align-items: baseline;
+              gap: 5px;
+              font-family: 'Poppins', 'Inter', sans-serif;
+              font-size: 13pt;
+              font-weight: 700;
+              color: #132A41;
+              border-bottom: 3px solid #B5642A;
+              padding-bottom: 2mm;
+              margin: 8mm 0 4mm 0;
+            }
+            .anexo-h .an {
+              color: #B5642A;
+              margin-right: 2mm;
+              font-weight: 700;
+            }
+
+            /* === SUMÁRIO === */
+            .sumario-page {
+              page-break-after: always;
+              padding-bottom: 10mm;
+              margin-bottom: 8mm;
+            }
+            .sumario-titulo {
+              font-family: 'Poppins', 'Inter', sans-serif;
+              font-size: 18pt;
+              font-weight: 700;
+              color: #132A41;
+              margin-bottom: 6mm;
+              border-bottom: 2px solid #B5642A;
+              padding-bottom: 2mm;
+            }
+            .toc-row {
+              border-bottom: 1px dotted #D8D0C6;
+              padding: 3mm 0;
+            }
+            .toc-row.anexo {
+              margin-top: 1.5mm;
+            }
+            .toc-row a {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              text-decoration: none;
+              color: #1A2A38;
+              font-size: 9pt;
+            }
+            .toc-row a span b {
+              color: #B5642A;
+              font-weight: 700;
+              margin-right: 1.5mm;
+            }
+            .toc-row a:hover {
+              color: #B5642A;
+            }
+            .toc-arrow {
+              color: #B5642A;
+              font-weight: bold;
+            }
+
+            /* === CAPA LOGO === */
+            .capa-logo-wrap {
+              display: flex;
+              align-items: center;
+              gap: 4mm;
+              margin-bottom: 8mm;
+            }
+            .capa-logo-mark {
+              width: 14mm;
+              height: 14mm;
+              background: #132A41;
+              color: #fff;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-family: 'Poppins', 'Inter', sans-serif;
+              font-size: 16pt;
+              font-weight: 700;
+              border-radius: 4px;
+              border: 1px solid #B5642A;
+            }
+            .capa-logo {
+              font-family: 'Poppins', 'Inter', sans-serif;
+              font-size: 14pt;
+              font-weight: 700;
+              color: #132A41;
+              line-height: 1.2;
+            }
+            .capa-logo-sub {
+              font-size: 8pt;
+              color: #8A949C;
+              font-weight: 500;
+              text-transform: uppercase;
+              letter-spacing: .05em;
+            }
 
             /* === SEÇÃO 1 — Tabela de Identificação === */
             table.t-ident {
@@ -2192,6 +2302,13 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
  
           <!-- CAPA P4 -->
           <div class="capa">
+            <div class="capa-logo-wrap">
+              <div class="capa-logo-mark">P4</div>
+              <div>
+                <div class="capa-logo">PREDIAL 4.0</div>
+                <div class="capa-logo-sub">LAUDOS TÉCNICOS ASSISTIDOS</div>
+              </div>
+            </div>
             <div class="capa-titulo">
               <h1>Laudo Técnico de Inspeção Predial</h1>
               <div class="sub">${form.buildingName}</div>
@@ -2213,8 +2330,13 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             </div>
           </div>
 
-          <!-- SEÇÃO 1 — Identificação -->
-          <h2 class="sec-h"><span class="sn">1.</span> Identificação</h2>
+          <!-- SUMÁRIO -->
+          ${sumario}
+
+          <!-- 1.0 Apresentação -->
+          <h2 class="sec-h" id="sec-1"><span class="sn">1.0</span>Apresentação</h2>
+          
+          <h3 style="font-size:10pt;font-weight:700;color:#132A41;margin:4mm 0 2mm;">1.1 Identificação</h3>
           ${(() => {
             const tdL1 = 'background:#F7F5F0;padding:1.5mm 3mm;font-size:8pt;font-weight:600;color:#4A5A66;border:1px solid #D8D0C6;width:23%;white-space:nowrap;';
             const tdV1 = 'padding:1.5mm 3mm;font-size:8.5pt;border:1px solid #D8D0C6;width:27%;';
@@ -2236,8 +2358,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             return `<table style="width:100%;border-collapse:collapse;margin-bottom:4mm;">${rows}</table>`;
           })()}
 
-          <!-- SEÇÃO 2 — Objeto e Natureza -->
-          <h2 class="sec-h"><span class="sn">2.</span> Objeto e Natureza da Inspeção</h2>
+          <h3 style="font-size:10pt;font-weight:700;color:#132A41;margin:4mm 0 2mm;">1.2 Objeto e Natureza da Inspeção</h3>
           <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">
             O presente Laudo Técnico de Inspeção Predial tem por objeto a edificação denominada
             <strong>${form.buildingName}</strong>, localizada em <strong>${form.address}</strong>,
@@ -2245,9 +2366,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             A inspeção foi realizada por profissional habilitado (${profile.fullName} — ${profile.professionalId || 'CAU/CREA'}),
             com emissão de Registro de Responsabilidade Técnica (RRT/ART), em conformidade com a ABNT NBR 16747:2020.
           </p>
-
-          <!-- SEÇÃO 3 — Objetivo, Metodologia e Normas -->
-          <h2 class="sec-h"><span class="sn">3.</span> Objetivo, Metodologia e Normas Técnicas</h2>
           <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">
             A inspeção tem por objetivo avaliar as condições técnicas de conservação, desempenho, segurança e
             manutenção da edificação, com classificação das anomalias segundo critérios de grau de risco
@@ -2256,6 +2374,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             análise por inteligência artificial (diagnóstico assistido) e emissão de relatório técnico estruturado
             por sistemas e tipologias prediais.
           </p>
+
+          <!-- 4.0 Normativo Técnico Aplicado -->
+          <h2 class="sec-h" id="sec-4"><span class="sn">4.0</span>Normativo Técnico Aplicado</h2>
           ${(() => {
             const sistemasUsados = [...new Set(ativa.items.map((i: any) => i.systemTitle))];
             const normas = this.dataService.getNormasParaRTIPA(sistemasUsados);
@@ -2285,14 +2406,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             return html;
           })()}
 
-          <!-- SEÇÃO 4 — Caracterização da Edificação -->
-          ${secao4}
-
-          <!-- ANAMNESE — Histórico e Constatações -->
-          ${anamnese}
-
-          <!-- SEÇÃO 5 — Síntese -->
-          <h2 class="sec-h"><span class="sn">5.</span> Síntese da Inspeção</h2>
+          <!-- Síntese da Inspeção -->
+          <h2 class="sec-h">Síntese da Inspeção</h2>
           <div class="sintese-grid">
             <div class="sintese-card">
               <span class="big">${estatisticas.total}</span>
@@ -2320,8 +2435,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             </div>
           </div>
 
-          <!-- SEÇÃO 6 — Sistemas inspecionados -->
-          <h2 class="sec-h"><span class="sn">6.</span> Sistemas Inspecionados — Tabela-Resumo</h2>
+          <!-- Sistemas Inspecionados — Tabela-Resumo -->
+          <h2 class="sec-h">Sistemas Inspecionados — Tabela-Resumo</h2>
           <table class="t-std">
             <thead>
               <tr>
@@ -2335,20 +2450,26 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             </tbody>
           </table>
 
-          <!-- SEÇÃO 7 — Relatório Fotográfico -->
-          ${secao7}
+          <!-- Anamnese — Histórico e Constatações -->
+          ${anamnese}
 
-          <!-- SEÇÃO 8 — Orçamento de Referência -->
-          ${secao8}
+          <!-- 7.0 Caracterização do Objeto da Inspeção -->
+          ${secao4}
 
-          <!-- SEÇÃO 9 — Plano de Ação e Memorial Descritivo -->
-          ${secao9}
+          <!-- 14.0 Relação de Anexos -->
+          ${relacaoAnexos}
 
-          <!-- ANEXO I — Documentos Norteadores -->
+          <!-- Anexo I — Verificação de Documentos Norteadores -->
           ${anexoI}
 
-          <!-- RELAÇÃO DE ANEXOS -->
-          ${relacaoAnexos}
+          <!-- Anexo II — Relatório Fotográfico -->
+          ${secao7}
+
+          <!-- Anexo III — Mapeamento de Danos -->
+          ${secao9}
+
+          <!-- Anexo VI — Orçamento de Referência -->
+          ${secao8}
 
           <!-- RODAPÉ P4 -->
           <div class="doc-footer">
@@ -2391,18 +2512,18 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {
-    const tdL = 'background:#F7F5F0;padding:1.5mm 3mm;font-size:8pt;font-weight:600;color:#4A5A66;border:1px solid #D8D0C6;width:23%;white-space:nowrap;';
-    const tdV = 'padding:1.5mm 3mm;font-size:8.5pt;border:1px solid #D8D0C6;width:27%;';
+    const tdL = 'background:#F7F5F0;padding:1.5mm 3mm;font-size:8pt;font-weight:600;color:#4A5A66;border:1px solid #D8D0C6;width:40%;white-space:nowrap;';
+    const tdV = 'padding:1.5mm 3mm;font-size:8.5pt;border:1px solid #D8D0C6;width:60%;';
 
-    // 1) MEMORIAL DESCRITIVO — aparece primeiro
+    // 1) MEMORIAL DESCRITIVO — aparece por último na seção
     const memoriaHtml = (ativa.memoriaDescritivo || ativa.objetoNatureza) ? `
-      <div style="margin:0 0 4mm;border-left:3px solid #B5642A;padding:3mm 4mm;background:#FAFAF8;border-radius:0 4px 4px 0;page-break-inside:avoid;">
+      <div style="margin:4mm 0;border-left:3px solid #B5642A;padding:3mm 4mm;background:#FAFAF8;border-radius:0 4px 4px 0;page-break-inside:avoid;">
         <div style="font-size:7.5pt;font-weight:700;color:#4A5A66;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2mm;">Memorial Descritivo da Edificação</div>
         <p style="font-size:8.5pt;line-height:1.65;text-align:justify;color:#2b2b2b;margin:0;">${ativa.memoriaDescritivo || ativa.objetoNatureza}</p>
       </div>
     ` : '';
 
-    // 2) MAPA DE LOCALIZAÇÃO
+    // 2) MAPA DE LOCALIZAÇÃO — aparece no meio
     const mapaHtml = ativa.mapaImagemBase64 ? `
       <div style="margin:3mm 0;border:1px solid #D8D0C6;border-radius:4px;overflow:hidden;page-break-inside:avoid;">
         <div style="background:#F7F5F0;padding:1.5mm 3mm;font-size:7.5pt;font-weight:600;color:#4A5A66;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #D8D0C6;">Mapa de Localização</div>
@@ -2416,25 +2537,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       </p>
     ` : '';
 
-    // 3) RELATÓRIO FOTOGRÁFICO SITUACIONAL
-    const fotosHtml = (ativa.fotosGerais && ativa.fotosGerais.length > 0) ? `
-      <div style="margin:3mm 0;page-break-inside:avoid;">
-        <div style="font-size:7.5pt;font-weight:700;color:#4A5A66;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3mm;">
-          Relatório Fotográfico Situacional
-          <span style="font-size:6.5pt;background:#F7F5F0;border:1px solid #D8D0C6;border-radius:3px;padding:1px 5px;font-weight:600;margin-left:3mm;">${ativa.fotosGerais.length} foto(s)</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3mm;">
-          ${ativa.fotosGerais.map((f: any, i: number) => `
-            <div style="border:1px solid #D8D0C6;border-radius:4px;overflow:hidden;">
-              <img src="${f.dataUrl}" alt="Foto ${i+1}" style="width:100%;max-height:55mm;object-fit:cover;display:block;">
-              <div style="padding:1.5mm 2mm;font-size:7pt;color:#4A5A66;background:#F7F5F0;">Foto ${String(i+1).padStart(2,'0')} — ${new Date(f.timestamp).toLocaleString('pt-BR')}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    ` : '';
-
-    // 4) TABELA DE DADOS — pares de 2 colunas, sem Denominação nem Endereço
+    // 3) TABELA DE DADOS — pares de 1 coluna para sidebar
     const campos: { l: string; v: string }[] = [];
     if (ativa.tipoUso) campos.push({ l: 'Tipo de Uso / Tipologia', v: ativa.tipoUso });
     if (ativa.areaConstruida) campos.push({ l: 'Área Construída', v: ativa.areaConstruida });
@@ -2460,27 +2563,56 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     let tabelaHtml = '';
     if (campos.length > 0) {
-      tabelaHtml = `<table style="width:100%;border-collapse:collapse;margin-bottom:4mm;font-size:8.5pt;">`;
-      for (let i = 0; i < campos.length; i += 2) {
-        const c1 = campos[i];
-        const c2 = campos[i + 1];
+      tabelaHtml = `<table style="width:100%;border-collapse:collapse;font-size:8.5pt;">`;
+      for (const c of campos) {
         tabelaHtml += `<tr>
-          <td style="${tdL}">${c1.l}</td><td style="${tdV}">${c1.v}</td>
-          ${c2
-            ? `<td style="${tdL}">${c2.l}</td><td style="${tdV}">${c2.v}</td>`
-            : `<td colspan="2" style="border:1px solid #D8D0C6;background:#fafafa;"></td>`
-          }
+          <td style="${tdL}">${c.l}</td><td style="${tdV}">${c.v}</td>
         </tr>`;
       }
       tabelaHtml += `</table>`;
     }
 
+    let perfilHtml = '';
+    if (ativa.fotosGerais && ativa.fotosGerais.length > 0) {
+      perfilHtml = `
+        <div style="display:flex; gap:5mm; align-items:flex-start; margin-bottom:4mm; page-break-inside:avoid;">
+          <!-- Coluna da Esquerda: Fotos da Fachada -->
+          <div style="flex:1.2; min-width:0;">
+            <div style="font-size:7.5pt;font-weight:700;color:#4A5A66;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2mm;">
+              Fotos da Fachada / Aspectos Gerais
+              <span style="font-size:6.5pt;background:#F7F5F0;border:1px solid #D8D0C6;border-radius:3px;padding:1px 5px;font-weight:600;margin-left:2mm;">${ativa.fotosGerais.length} foto(s)</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2.5mm;">
+              ${ativa.fotosGerais.map((f: any, i: number) => `
+                <div style="border:1px solid #D8D0C6;border-radius:4px;overflow:hidden;background:#F7F5F0;">
+                  <img src="${f.dataUrl}" alt="Foto ${i+1}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">
+                  <div style="padding:1mm 1.5mm;font-size:6.5pt;color:#4A5A66;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Foto ${String(i+1).padStart(2,'0')}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Coluna da Direita: Dados Técnicos -->
+          <div style="flex:1; flex-shrink:0;">
+            <div style="font-size:7.5pt;font-weight:700;color:#4A5A66;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2mm;">Dados Técnicos da Edificação</div>
+            ${tabelaHtml}
+          </div>
+        </div>
+      `;
+    } else {
+      perfilHtml = `
+        <div style="margin-bottom:4mm; page-break-inside:avoid;">
+          <div style="font-size:7.5pt;font-weight:700;color:#4A5A66;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2mm;">Dados Técnicos da Edificação</div>
+          ${tabelaHtml}
+        </div>
+      `;
+    }
+
     return `
-      <h2 class="sec-h"><span class="sn">4.</span> Caracterização da Edificação</h2>
-      ${memoriaHtml}
+      <h2 class="sec-h" id="sec-7"><span class="sn">7.0</span>Caracterização do Objeto da Inspeção</h2>
+      ${perfilHtml}
       ${mapaHtml}
-      ${fotosHtml}
-      ${tabelaHtml}
+      ${memoriaHtml}
     `;
   }
 
@@ -2491,7 +2623,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     if (itensComOrcamento.length === 0) {
       return `
-        <h2 class="sec-h"><span class="sn">8.</span> Orçamento de Referência</h2>
+        <h2 class="anexo-h" id="anexo-6"><span class="an">Anexo VI</span>Orçamento de Referência</h2>
         <p style="font-size:9pt;color:#6B7280;font-style:italic;margin-bottom:6mm;">
           Nenhuma composição de custo vinculada a itens desta vistoria. O banco de composições está em construção — quando disponível, vincule composições a cada item Não Conforme para gerar esta seção.
         </p>`;
@@ -2501,7 +2633,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const tdS = 'padding:1.5mm 3mm;font-size:8pt;border:1px solid #D8D0C6;vertical-align:top;';
     const td1S = 'padding:1.5mm 3mm;font-size:8pt;border:1px solid #D8D0C6;vertical-align:top;font-weight:600;color:#B5642A;';
 
-    let html = `<h2 class="sec-h"><span class="sn">8.</span> Orçamento de Referência</h2>`;
+    let html = `<h2 class="anexo-h" id="anexo-6"><span class="an">Anexo VI</span>Orçamento de Referência</h2>`;
 
     for (const item of itensComOrcamento) {
       const idx = itens.findIndex(i => i.id === item.id);
@@ -2575,13 +2707,13 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     if (todasFichas.length === 0) {
       return `
-        <h2 class="sec-h"><span class="sn">9.</span> Plano de Ação e Memorial Descritivo</h2>
+        <h2 class="anexo-h" id="anexo-3"><span class="an">Anexo III</span>Mapeamento de Danos</h2>
         <p style="font-size:9pt;color:#6B7280;font-style:italic;margin-bottom:6mm;">
           Nenhuma ocorrência registrada nesta vistoria.
         </p>`;
     }
 
-    let html = `<h2 class="sec-h"><span class="sn">9.</span> Plano de Ação e Memorial Descritivo</h2>`;
+    let html = `<h2 class="anexo-h" id="anexo-3"><span class="an">Anexo III</span>Mapeamento de Danos</h2>`;
 
     for (const { item, ficha } of todasFichas) {
       const seqStr = String(ficha.numeroFicha ?? 0).padStart(3, '0');
@@ -2622,8 +2754,10 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
         ? `<div class="s9-quant"><strong>Quantitativo de campo:</strong> ${ficha.quantitativo.trim()}</div>`
         : '';
 
+      const corCriticidade = { P1: '#B23A48', P2: '#B77D1A', P3: '#6B7280' }[ficha.criticidade || ''] || '#D8D0C6';
+
       html += `
-        <div class="s9-card no-break">
+        <div class="s9-card no-break" style="border-left: 8mm solid ${corCriticidade};">
           <div class="s9-header">
             <span class="s9-id">FICHA Nº ${seqStr}</span>
             <div class="s9-chips">
@@ -2731,7 +2865,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const docs = ativa.documentosNorteadores ?? [];
     if (docs.length === 0) {
       return `
-        <h2 class="sec-h" style="margin-top:8mm;page-break-before:always;"><span class="sn">A-I</span> Verificação de Documentos Norteadores</h2>
+        <h2 class="anexo-h" id="anexo-1" style="margin-top:8mm;page-break-before:always;"><span class="an">Anexo I</span>Verificação de Documentos Norteadores</h2>
         <p style="font-size:9pt;color:#6B7280;font-style:italic;margin-bottom:6mm;">Nenhum documento norteador registrado nesta vistoria.</p>
       `;
     }
@@ -2843,8 +2977,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       tabelasHtml += `
         <div style="margin-bottom:6mm;page-break-inside:avoid;">
           <h3 style="font-size:9.5pt;font-weight:700;color:#132A41;margin:4mm 0 2mm;border-bottom:1.5px solid #132A41;padding-bottom:0.5mm;">${g}</h3>
-          <table style="width:100%;border-collapse:collapse;margin-bottom:2mm;">
-            <thead>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:2mm;page-break-inside:auto;">
+            <thead style="display:table-header-group;">
               <tr>
                 <th style="${thS}width:45%;">Documento</th>
                 <th style="${thS}width:20%;">Disponibilidade</th>
@@ -2862,7 +2996,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     return `
       <div style="page-break-before:always;margin-top:8mm;">
-        <h2 class="sec-h"><span class="sn">A-I</span> Verificação de Documentos Norteadores</h2>
+        <h2 class="anexo-h" id="anexo-1"><span class="an">Anexo I</span>Verificação de Documentos Norteadores</h2>
         <p style="font-size:9pt;line-height:1.6;text-align:justify;color:#2b2b2b;margin:2mm 0 5mm;">
           ${sintetico}
         </p>
@@ -2879,7 +3013,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     let html = `
       <div style="page-break-before:always;margin-top:8mm;">
-        <h2 class="sec-h"><span class="sn">•</span> Anamnese — Histórico e Constatações</h2>
+        <h2 class="sec-h">Anamnese — Histórico e Constatações</h2>
     `;
 
     const labels: Record<string, string> = {
@@ -3023,7 +3157,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     return `
       <div style="page-break-before:always;margin-top:8mm;page-break-inside:avoid;">
-        <h2 class="sec-h"><span class="sn">A-II</span> Relação de Anexos</h2>
+        <h2 class="sec-h" id="sec-14"><span class="sn">14.0</span>Relação de Anexos</h2>
         <table style="width:100%;border-collapse:collapse;margin-bottom:2mm;">
           <thead>
             <tr>
@@ -3045,13 +3179,26 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     `;
   }
 
+  private gerarSumarioHtml(entries: { href: string; num?: string; label: string }[]): string {
+    const rows = entries.map(e => `
+      <div class="toc-row${e.num ? '' : ' anexo'}">
+        <a href="#${e.href}"><span>${e.num ? `<b>${e.num}</b> ` : ''}${e.label}</span><span class="toc-arrow">→</span></a>
+      </div>`).join('');
+    return `
+      <div class="sumario-page">
+        <div class="sumario-titulo">Sumário</div>
+        <p style="font-size:8.5pt;color:#8A949C;margin-top:-4mm;margin-bottom:5mm;">Clique em qualquer item para ir direto à seção no documento.</p>
+        ${rows}
+      </div>`;
+  }
+
   private gerarSecao7Html(
     itens: ChecklistItem[],
     evidenciasMap: Map<string, { dataUrl: string; geo: any; timestamp: string; tipo: string }>
   ): string {
 
     let html = `
-      <h2 class="sec-h"><span class="sn">7.</span> Relatório Fotográfico e Itens de Auxílio à Inspeção</h2>
+      <h2 class="anexo-h" id="anexo-2"><span class="an">Anexo II</span>Relatório Fotográfico</h2>
     `;
 
     for (const item of itens) {
