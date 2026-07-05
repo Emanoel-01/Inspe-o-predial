@@ -278,6 +278,17 @@
                     placeholder="Insira a justificativa para a adoção deste nível de inspeção..." 
                     class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"></textarea>
         </div>
+
+        <div class="sm:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+          <label class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox"
+                   [checked]="novoExibirGlossario()"
+                   (change)="novoExibirGlossario.set($any($event.target).checked)"
+                   class="h-4 w-4 rounded border-slate-300 text-sky-700 focus:ring-sky-500 cursor-pointer">
+            <span class="text-xs font-bold uppercase text-slate-600 tracking-wider">Incluir Glossário de Termos no laudo (Seção 3.0)</span>
+          </label>
+          <p class="text-[11px] text-slate-400 ml-6">Recomendado para clientes leigos; pode ser desativado em laudos para públicos técnicos.</p>
+        </div>
         <div class="sm:col-span-2 space-y-1">
           <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Memorial Descritivo da Edificação</label>
           <textarea [value]="novoMemoriaDescritivo()"

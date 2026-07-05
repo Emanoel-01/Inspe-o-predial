@@ -126,6 +126,7 @@ export interface Vistoria {
   items: ChecklistItem[];
   documentosNorteadores?: DocumentoNorteador[];
   anamnese?: Anamnese;
+  exibirGlossario?: boolean;   // NOVO — Seção 3.0 do laudo; on por padrão (undefined = true)
 }
 
 export interface LaudoEmitido {
@@ -349,6 +350,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   novoNivelInspecao = signal<'1' | '2' | '3'>('1');
   novoNivelInspecaoMetodologia = signal('');
   novoNivelInspecaoJustificativa = signal('');
+  novoExibirGlossario = signal<boolean>(true);
 
   private resolverOcorrenciaEmEdicao(item: ChecklistItem): FichaDano | null {
     if (this.itemDaFichaEmEdicaoId() === item.id && this.fichaEmEdicaoId()) {
@@ -796,6 +798,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
     this.novoNivelInspecao.set('1');
     this.novoNivelInspecaoMetodologia.set(METODOLOGIA_NIVEL['1']);
     this.novoNivelInspecaoJustificativa.set(JUSTIFICATIVA_NIVEL['1']);
+    this.novoExibirGlossario.set(true);
 
     this.modoExibicao.set('CRIACAO');
     // Captura GPS em background — pronto antes de o RT terminar de preencher o formulário
@@ -841,6 +844,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
     this.novoNivelInspecao.set(vistoria.nivelInspecao ?? '1');
     this.novoNivelInspecaoMetodologia.set(vistoria.nivelInspecaoMetodologia ?? (vistoria.nivelInspecao ? METODOLOGIA_NIVEL[vistoria.nivelInspecao] : ''));
     this.novoNivelInspecaoJustificativa.set(vistoria.nivelInspecaoJustificativa ?? (vistoria.nivelInspecao ? JUSTIFICATIVA_NIVEL[vistoria.nivelInspecao] : ''));
+    this.novoExibirGlossario.set(vistoria.exibirGlossario ?? true);
 
     this.modoExibicao.set('EDICAO');
   }
@@ -872,6 +876,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
       nivelInspecao: this.novoNivelInspecao(),
       nivelInspecaoMetodologia: this.novoNivelInspecaoMetodologia().trim() || undefined,
       nivelInspecaoJustificativa: this.novoNivelInspecaoJustificativa().trim() || undefined,
+      exibirGlossario: this.novoExibirGlossario(),
 
       dateUpdated: new Date().toISOString(),
     };
@@ -1004,6 +1009,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
       nivelInspecao: this.novoNivelInspecao(),
       nivelInspecaoMetodologia: this.novoNivelInspecaoMetodologia().trim() || undefined,
       nivelInspecaoJustificativa: this.novoNivelInspecaoJustificativa().trim() || undefined,
+      exibirGlossario: this.novoExibirGlossario(),
 
       contadorFichas: 0,
       dateCreated: new Date().toISOString(),
@@ -1811,6 +1817,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     const secao4 = this.gerarSecao4Html(ativa);
     const qualificacao = this.gerarQualificacaoHtml(profile);
+    const glossario = this.gerarGlossarioHtml(ativa.exibirGlossario ?? true);
     const ressalvas = this.gerarRessalvasHtml();
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
@@ -1822,6 +1829,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const sumarioEntries = [
       { href: 'sec-1',  num: '1.0',  label: 'Apresentação' },
       { href: 'sec-2',  num: '2.0',  label: 'Qualificação do Responsável Técnico' },
+      ...((ativa.exibirGlossario ?? true) ? [{ href: 'sec-3', num: '3.0', label: 'Glossário' }] : []),
       { href: 'sec-4',  num: '4.0',  label: 'Normativo Técnico Aplicado' },
       { href: 'sec-5',  num: '5.0',  label: 'Ressalvas e Princípios' },
       { href: 'sec-7',  num: '7.0',  label: 'Caracterização do Objeto da Inspeção' },
@@ -2397,6 +2405,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 2.0 Qualificação do Responsável Técnico -->
           ${qualificacao}
 
+          <!-- 3.0 Glossário -->
+          ${glossario}
+
           <!-- 4.0 Normativo Técnico Aplicado -->
           <h2 class="sec-h" id="sec-4"><span class="sn">4.0</span>Normativo Técnico Aplicado</h2>
           ${(() => {
@@ -2547,7 +2558,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     if (categoria === 'arquiteto') {
       baseLegal = `no gozo das atribuições que lhe são conferidas pela Lei Federal nº 12.378, de 31 de dezembro de 2010, e pela Resolução CAU/BR nº 21, de 25 de abril de 2012, que tipifica os serviços de vistoria, perícia, avaliação, monitoramento e laudo técnico para efeito de registro de responsabilidade técnica`;
     } else if (categoria === 'engenheiro') {
-      baseLegal = `no gozo das atribuições que lhe são conferidas pela Lei Federal nº 5.194, de 24 de dezembro de 1966, que regula o exercício da profissão de Engenheiro, e pela Resolução CONFEA nº 218, de 29 de junho de 1973, que discrimina as atividades das diferentes modalidades profissionais, incluindo vistoria, perícia, avaliação, laudo e parecer técnico`;
+      baseLegal = `no gozo das atribuições que lhe são conferidas pela Lei Federal nº 5.194, de 24 de dezembro de 1966, que regula o exercício da profissão de Engenheiro, e pela Resolução CONFEA nº 218, de 29 de junho de 1973, que discrimina as atividades das diferentes modalidades profissionais, including vistoria, perícia, avaliação, laudo e parecer técnico`;
     } else {
       baseLegal = `no gozo das atribuições que lhe são conferidas pelas Resoluções CFT nº 058, de 2019, e nº 108, de 2020, do Conselho Federal dos Técnicos Industriais, observados os limites de área construída e tipologia construtiva estabelecidos nos normativos de habilitação da categoria`;
     }
@@ -2559,6 +2570,52 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">O profissional assume integral responsabilidade técnica pelas análises, diagnósticos e recomendações constantes deste documento, mediante emissão do respectivo Registro/Anotação de Responsabilidade Técnica (RRT/ART/TRT), constante no Anexo IV.</p>
       <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">A responsabilidade técnica aqui assumida está circunscrita ao escopo, à metodologia e ao nível de inspeção declarados nas Seções 6.0 e 7.0 deste laudo, não se estendendo a sistemas, elementos ou condições não abrangidos pela inspeção visual realizada na data informada.</p>
     `;
+  }
+
+  private gerarGlossarioHtml(exibir: boolean): string {
+    if (exibir === false) return '';
+
+    const termos: { termo: string; def: string }[] = [
+      { termo: '3.1 Agentes de Degradação', def: 'Tudo aquilo que, ao agir sobre um sistema, contribui para reduzir seu desempenho.' },
+      { termo: '3.2 Anamnese', def: 'Etapa da inspeção predial que consiste em uma ou mais entrevistas para coleta de dados e obtenção de informações sobre o histórico da edificação, realizada com representante qualificado para tanto.' },
+      { termo: '3.3 Anomalia', def: 'Irregularidade, anormalidade e exceção à regra que ocasionam a perda de desempenho da edificação ou suas partes, oriundas da fase de projeto, execução ou final de vida útil, além de fatores externos, podendo ser classificada como anomalia endógena, funcional ou exógena.' },
+      { termo: '3.4 Avaliação do Comportamento em Uso na Inspeção Predial', def: 'Constatação e avaliação sensorial do comportamento em uso dos sistemas construtivos na fase de uso, operação e manutenção, considerando os requisitos dos usuários e o desempenho esperado.' },
+      { termo: '3.5 Avaliação Sensorial', def: 'Avaliação dos atributos de um produto pelos órgãos dos sentidos para evocar, medir, analisar e interpretar reações às características dos materiais, percebidos pelos cinco sentidos.' },
+      { termo: '3.6 Condições de Exposição', def: 'Conjunto de ações atuantes sobre a edificação, incluindo cargas gravitacionais, ações externas e ações resultantes da ocupação.' },
+      { termo: '3.7 Conformidade', def: 'Atendimento a um ou mais requisitos estabelecidos em normas técnicas ou na legislação aplicável.' },
+      { termo: '3.8 Conservação', def: 'Conjunto de operações que visa reparar, preservar ou manter em bom estado a edificação existente, conforme ABNT NBR 16280.' },
+      { termo: '3.9 Desempenho', def: 'Comportamento em uso de uma edificação e de seus sistemas, quando submetidos às condições de exposição e de uso a que estão sujeitos ao longo de sua vida útil e mediante as operações de manutenção previstas.' },
+      { termo: '3.10 Deterioração', def: 'Degradação antes do final da vida útil dos materiais e/ou componentes das edificações, em decorrência de anomalias e/ou falhas de uso, operação e manutenção.' },
+      { termo: '3.11 Durabilidade', def: 'Capacidade da edificação ou de seus sistemas de desempenhar suas funções ao longo do tempo e sob condições de exposição, uso e manutenção previstas em projeto e construção.' },
+      { termo: '3.12 Falha (de uso, operação ou manutenção)', def: 'Irregularidade ou anormalidade que implica no término da capacidade da edificação de cumprir suas funções como requerido, decorrente de uso e/ou operação inadequados, e/ou de inadequação do plano de manutenção.' },
+      { termo: '3.13 Inspeção Predial', def: 'Processo de avaliação das condições técnicas, de uso, operação, manutenção e funcionalidade da edificação e de seus sistemas, de forma sistêmica e predominantemente sensorial, considerando os requisitos dos usuários.' },
+      { termo: '3.14 Inspeção Predial Especializada', def: 'Processo que visa avaliar as condições técnicas de um sistema ou subsistema específico, normalmente desencadeado pela inspeção predial, complementando ou aprofundando o diagnóstico.' },
+      { termo: '3.15 Inspetor Predial', def: 'Profissional habilitado responsável pela inspeção predial.' },
+      { termo: '3.16 Laudo Técnico de Inspeção Predial', def: 'Documento escrito, emitido pelo inspetor predial, que registra os resultados da inspeção predial.' },
+      { termo: '3.17 Manifestação Patológica', def: 'Ocorrência resultante de um mecanismo de degradação; sinais ou sintomas decorrentes de mecanismos de degradação de materiais, componentes ou sistemas, que reduzem seu desempenho.' },
+      { termo: '3.18 Manutenibilidade', def: 'Grau de facilidade de um sistema, elemento ou componente de ser mantido ou recolocado no estado em que possa executar suas funções requeridas sob condições de uso especificadas.' },
+      { termo: '3.19 Patamares de Prioridades', def: 'Organização das prioridades, em patamares de urgência, necessárias para restaurar ou preservar o desempenho dos sistemas afetados por falhas, anomalias ou manifestações patológicas.' },
+      { termo: '3.20 Profissional Habilitado', def: 'Profissional com formação nas áreas de engenharia ou arquitetura e urbanismo, com registro no respectivo conselho de classe (CREA ou CAU) e consideradas suas atribuições profissionais.' },
+      { termo: '3.21 Plano de Manutenção', def: 'Programa para determinação das atividades essenciais de manutenção, sua periodicidade, responsáveis, documentos de referência e recursos necessários, conforme ABNT NBR 5674.' },
+      { termo: '3.22 Requisitos de Desempenho', def: 'Condições que expressam qualitativamente os atributos que a edificação e seus sistemas necessitam possuir para atender aos requisitos do usuário.' },
+      { termo: '3.23 Sistema', def: 'Conjunto de elementos e componentes destinados a atender a uma macrofunção que o define, sendo a maior parte funcional do edifício.' },
+      { termo: '3.24 Vida Útil (VU)', def: 'Período em que um edifício ou seus sistemas se prestam às atividades para as quais foram projetados e construídos, com atendimento dos níveis de desempenho esperados, considerando a correta execução dos processos de manutenção.' },
+      { termo: '3.25 Vistoria', def: 'Processo de constatação, no local, predominantemente sensorial, do comportamento em uso da edificação, por ocasião da data da vistoria (diligência).' },
+    ];
+
+    const linhas = termos.map((t, i) => {
+      const bg = i % 2 === 0 ? '#fff' : '#F7F5F0';
+      return `<tr style="background:${bg};"><td style="padding:2mm 3mm;font-weight:600;color:#132A41;vertical-align:top;width:30%;border:1px solid #D8D0C6;">${t.termo}</td><td style="padding:2mm 3mm;vertical-align:top;border:1px solid #D8D0C6;">${t.def}</td></tr>`;
+    }).join('');
+
+    return `
+      <h2 class="sec-h" id="sec-3"><span class="sn">3.0</span>Glossário</h2>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">Para os efeitos deste Laudo Técnico de Inspeção Predial, aplicam-se os termos e definições abaixo
+      denominados, configurando e facilitando a leitura por leigos:</p>
+      <table class="t-std">
+        <thead><tr><th style="width:30%">Termo</th><th>Definição</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>`;
   }
 
   private gerarRessalvasHtml(): string {
