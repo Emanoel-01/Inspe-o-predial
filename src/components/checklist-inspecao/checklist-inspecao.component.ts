@@ -1820,6 +1820,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const glossario = this.gerarGlossarioHtml(ativa.exibirGlossario ?? true);
     const ressalvas = this.gerarRessalvasHtml();
     const metodologia = this.gerarMetodologiaHtml();
+    const diagnostico = this.gerarDiagnosticoHtml(itens);
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
@@ -1836,6 +1837,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       { href: 'sec-6',  num: '6.0',  label: 'Metodologia Aplicada' },
       { href: 'sec-7',  num: '7.0',  label: 'Caracterização do Objeto da Inspeção' },
       { href: 'sec-9',  num: '9.0',  label: 'Vistoria no Objeto da Inspeção' },
+      { href: 'sec-10', num: '10.0', label: 'Diagnóstico do Objeto da Inspeção' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
       { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
@@ -2501,6 +2503,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             </div>
           </div>
 
+          <!-- 10.0 Diagnóstico do Objeto da Inspeção -->
+          ${diagnostico}
+
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
 
@@ -2684,6 +2689,72 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       </table>
       <p style="font-size:8pt;color:#8A949C;margin-top:2mm;line-height:1.5;">Matriz GUT (Gravidade × Urgência × Tendência): disponível como camada complementar de priorização, aplicada
       de forma opcional a fichas específicas quando indicado pelo Responsável Técnico (ver Anexo III).</p>`;
+  }
+
+  private gerarDiagnosticoHtml(itens: ChecklistItem[]): string {
+    const todasFichas: { item: ChecklistItem; ficha: FichaDano }[] = [];
+    itens.forEach(item => {
+      (item.ocorrencias ?? []).forEach(ficha => {
+        todasFichas.push({ item, ficha });
+      });
+    });
+    todasFichas.sort((a, b) => (a.ficha.numeroFicha ?? 0) - (b.ficha.numeroFicha ?? 0));
+
+    const titulo = `<h2 class="sec-h" id="sec-10"><span class="sn">10.0</span>Diagnóstico do Objeto da Inspeção</h2>`;
+
+    if (todasFichas.length === 0) {
+      return `${titulo}
+        <p style="font-size:9pt;color:#6B7280;font-style:italic;margin-bottom:6mm;">
+          Não foram identificadas ocorrências, anomalias ou falhas nesta vistoria até o momento.
+        </p>`;
+    }
+
+    const linhas = todasFichas.map(({ item, ficha }, idx) => {
+      const seqStr = String(ficha.numeroFicha ?? 0).padStart(3, '0');
+      const bg = idx % 2 === 0 ? '#fff' : '#F7F5F0';
+
+      let badgeClass = 'na';
+      let critLabel = 'Pendente';
+      if (ficha.criticidade === 'P1') { badgeClass = 'p1'; critLabel = 'P1'; }
+      else if (ficha.criticidade === 'P2') { badgeClass = 'p2'; critLabel = 'P2'; }
+      else if (ficha.criticidade === 'P3') { badgeClass = 'p3'; critLabel = 'P3'; }
+
+      const classificacaoTexto = ficha.classificacao?.tipo && ficha.classificacao.tipo !== 'INDETERMINADO'
+        ? `${ficha.classificacao.tipo === 'ANOMALIA' ? 'Anomalia' : 'Falha'}${ficha.classificacao.subtipo ? ' — ' + ficha.classificacao.subtipo : ''}`
+        : 'Não classificada';
+
+      const manifestacaoResumo = ficha.manifestacao
+        ? (ficha.manifestacao.length > 90 ? ficha.manifestacao.slice(0, 87) + '…' : ficha.manifestacao)
+        : '<span style="color:#8A949C;font-style:italic;">Ficha sem diagnóstico preenchido.</span>';
+
+      return `<tr style="background:${bg};">
+        <td><a href="#ficha-${seqStr}" style="color:#185fa5;text-decoration:none;font-weight:600;">${seqStr}</a></td>
+        <td>${item.systemTitle ?? ''}</td>
+        <td>${classificacaoTexto}</td>
+        <td>${manifestacaoResumo}</td>
+        <td style="text-align:center;"><span class="badge ${badgeClass}">${critLabel}</span></td>
+      </tr>`;
+    }).join('');
+
+    return `${titulo}
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">Das ${itens.length} tipologias inspecionadas, foram registradas ${todasFichas.length} ocorrência(s),
+      detalhadas individualmente no Anexo III (Mapeamento de Danos). O quadro-síntese abaixo consolida as
+      ocorrências para leitura executiva:</p>
+      <table class="t-std">
+        <thead>
+          <tr>
+            <th style="width:10%">Ficha</th>
+            <th style="width:20%">Sistema</th>
+            <th style="width:18%">Classificação</th>
+            <th style="width:38%">Manifestação (síntese)</th>
+            <th style="width:14%;text-align:center">Criticidade</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <p style="font-size:8pt;color:#8A949C;margin-top:2mm;line-height:1.5;">Detalhamento completo de cada ocorrência — localização, causa
+      provável, recomendação técnica, normas aplicáveis e registro fotográfico — disponível na ficha individual
+      correspondente, no Anexo III.</p>`;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {
@@ -2932,7 +3003,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       const corCriticidade = { P1: '#B23A48', P2: '#B77D1A', P3: '#6B7280' }[ficha.criticidade || ''] || '#D8D0C6';
 
       html += `
-        <div class="s9-card no-break" style="border-left: 8mm solid ${corCriticidade};">
+        <div class="s9-card no-break" id="ficha-${seqStr}" style="border-left: 8mm solid ${corCriticidade};">
           <div class="s9-header">
             <span class="s9-id">FICHA Nº ${seqStr}</span>
             <div class="s9-chips">
