@@ -133,6 +133,7 @@ export interface Vistoria {
   conclusaoRiscosTexto?: string;          // NOVO — 13.2
   conclusaoRecomendacoesTexto?: string;   // NOVO — 13.3
   conclusaoConsideracoesTexto?: string;   // NOVO — 13.4
+  anexoArtRrt?: Anexo;   // NOVO — metadados do ART/RRT anexado; blob no store 'anexos' (mesmo mecanismo do Bloco 3)
 }
 
 export interface LaudoEmitido {
@@ -563,7 +564,7 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   contagemCriticidadeTotal = computed(() => this.fichasAtivas().length);
 
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
-  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO' | 'AVALIACAO_MANUTENCAO' | 'AVALIACAO_CRITICIDADE' | 'CONCLUSOES'>('LISTA');
+  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO' | 'AVALIACAO_MANUTENCAO' | 'AVALIACAO_CRITICIDADE' | 'CONCLUSOES' | 'ANEXO_ART'>('LISTA');
   vistoriaEmEdicao = signal<Vistoria | null>(null);
   laudoSelecionado = signal<LaudoEmitido | null>(null);
   novoAvaliacaoManutencaoTexto = signal<string>('');
@@ -1963,6 +1964,60 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     this.salvarConclusaoConsideracoes(s);
   }
 
+  navegarParaAnexoArt(): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
+    console.log('navegarParaAnexoArt disparado'); // prova de evento 0.4
+    this.modoExibicao.set('ANEXO_ART');
+  }
+
+  voltarDeAnexoArt(): void {
+    this.modoExibicao.set('EXECUCAO');
+  }
+
+  async processarAnexoArtRrt(files: FileList | null): Promise<void> {
+    console.log(`processarAnexoArtRrt: ${files?.length ?? 0} arquivo(s)`); // prova 0.4
+    if (!files || files.length === 0) return;
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+
+    const file = files[0]; // só o primeiro — um ART por vistoria
+    const id = crypto.randomUUID();
+    await this.dbService.saveAnexoBlob({ id, blob: file, mimeType: file.type });
+
+    const anexo: Anexo = { id, nome: file.name, tipo: file.type, tamanho: file.size, dataUpload: new Date().toISOString() };
+
+    // Se já havia um ART anexado antes, remover o blob antigo (evita órfão no store)
+    if (ativa.anexoArtRrt?.id) {
+      await this.dbService.deleteAnexoBlob(ativa.anexoArtRrt.id);
+    }
+
+    this.atualizarVistoriaAtiva({ anexoArtRrt: anexo });
+    this.toastService.show('ART/RRT anexado com sucesso.', 'success');
+  }
+
+  solicitarExcluirAnexoArtRrt(): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa?.anexoArtRrt) return;
+    const anexoId = ativa.anexoArtRrt.id;
+    console.log(`solicitarExcluirAnexoArtRrt: ${anexoId}`); // prova 0.4
+    if (this.anexoPendenteConfirmacaoExclusao() === anexoId) {
+      void this.excluirAnexoArtRrt(anexoId);
+      this.anexoPendenteConfirmacaoExclusao.set(null);
+    } else {
+      this.anexoPendenteConfirmacaoExclusao.set(anexoId);
+      this.toastService.show('Clique novamente para confirmar a exclusão do ART/RRT.', 'info');
+      setTimeout(() => {
+        if (this.anexoPendenteConfirmacaoExclusao() === anexoId) this.anexoPendenteConfirmacaoExclusao.set(null);
+      }, 3000);
+    }
+  }
+
+  private async excluirAnexoArtRrt(anexoId: string): Promise<void> {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    await this.dbService.deleteAnexoBlob(anexoId);
+    this.atualizarVistoriaAtiva({ anexoArtRrt: undefined });
+    this.toastService.show('ART/RRT removido.', 'success');
+  }
+
   voltarParaLista(): void {
     this.vistoriaAtiva.set(null);
     this.modoExibicao.set('LISTA');
@@ -2131,6 +2186,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const secao9 = this.gerarSecao9Html(itens);
     const anexoI = this.gerarAnexoINorteadoresHtml(ativa);
     const relacaoAnexos = this.gerarRelacaoAnexosHtml(ativa);
+    const anexoIV = this.gerarAnexoIVHtml(ativa);
+    const encerramento = this.gerarEncerramentoHtml(ativa, profile);
 
     const sumarioEntries = [
       { href: 'sec-1',  num: '1.0',  label: 'Apresentação' },
@@ -2145,10 +2202,12 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       { href: 'sec-11', num: '11.0', label: 'Avaliação da Manutenção e Uso' },
       { href: 'sec-12', num: '12.0', label: 'Avaliação do Grau de Criticidade' },
       { href: 'sec-13', num: '13.0', label: 'Conclusões e Considerações Finais' },
+      { href: 'sec-15', num: '15.0', label: 'Encerramento e Assinatura' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
       { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
       { href: 'anexo-3', label: 'Anexo III — Mapeamento de Danos' },
+      { href: 'anexo-4', label: 'Anexo IV — ART / RRT' },
       { href: 'anexo-6', label: 'Anexo VI — Orçamento de Referência' }
     ];
     const sumario = this.gerarSumarioHtml(sumarioEntries);
@@ -2596,6 +2655,10 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
               color: #2b2b2b;
               text-align: justify;
             }
+            .selo-amorimtech { display:inline-flex; align-items:center; gap:3mm; border:1px solid #D8D0C6; border-radius:30px; padding:2.5mm 6mm 2.5mm 3mm; margin-top:10mm; }
+            .selo-amorimtech .badge-circ { width:9mm; height:9mm; border-radius:50%; background:#132A41; color:#E8B27E; display:flex; align-items:center; justify-content:center; font-family:'Poppins',sans-serif; font-weight:700; font-size:9pt; flex-shrink:0; }
+            .selo-amorimtech .txt { font-size:7.5pt; color:#4A5A66; line-height:1.4; }
+            .selo-amorimtech .txt b { color:#132A41; font-family:'Poppins',sans-serif; }
           </style>
       </head>
       <body>
@@ -2822,6 +2885,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 13.0 Conclusões e Considerações Finais -->
           ${conclusoes}
 
+          <!-- 15.0 Encerramento e Assinatura -->
+          ${encerramento}
+
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
 
@@ -2834,8 +2900,19 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- Anexo III — Mapeamento de Danos -->
           ${secao9}
 
+          <!-- Anexo IV — ART / RRT -->
+          ${anexoIV}
+
           <!-- Anexo VI — Orçamento de Referência -->
           ${secao8}
+
+          <!-- Selo final — sempre a última peça do documento -->
+          <div style="text-align:center; margin-top:6mm;">
+            <div class="selo-amorimtech">
+              <div class="badge-circ">A</div>
+              <div class="txt"><b>Gerado pela plataforma Predial 4.0</b><br>AmorimTech Ecossistema 4.0 — tecnologia de inspeção predial</div>
+            </div>
+          </div>
 
           <!-- RODAPÉ P4 -->
           <div class="doc-footer">
@@ -3128,6 +3205,41 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${recomendacoes}</p>
       <p style="margin-top:4mm;margin-bottom:1.5mm;font-weight:bold;font-size:9.5pt;color:#132A41;">13.4 Considerações Finais</p>
       <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${consideracoes}</p>`;
+  }
+
+  private gerarAnexoIVHtml(ativa: Vistoria): string {
+    const anexo = ativa.anexoArtRrt;
+    return `
+      <h2 class="anexo-h" id="anexo-4"><span class="an">Anexo IV</span>ART / RRT</h2>
+      ${anexo
+        ? `<div class="callout norm">📎 <b>${anexo.nome}</b> — Registro/Anotação de Responsabilidade Técnica anexado pelo Responsável Técnico. <span style="color:#8A949C">(visualização do arquivo não disponível no PDF; documento entregue em meio eletrônico junto ao laudo)</span></div>`
+        : `<p style="font-size:9pt;color:#6B7280;font-style:italic;">Nenhum ART/RRT anexado até o momento da emissão deste laudo.</p>`
+      }`;
+  }
+
+  private gerarEncerramentoHtml(ativa: Vistoria, profile: UserProfile): string {
+    return `
+      <h2 class="sec-h" id="sec-15"><span class="sn">15.0</span>Encerramento e Assinatura</h2>
+      <p>Dá-se por encerrado o presente Laudo Técnico de Inspeção Predial, elaborado com base na vistoria técnica
+      realizada em ${new Date(ativa.dateCreated).toLocaleDateString('pt-BR')} na edificação
+      <b>${ativa.buildingName}</b>, situada em ${ativa.address}.</p>
+      <p>Este documento é considerado provisório até a assinatura física ou digital do Responsável Técnico
+      abaixo identificado, momento em que passa a produzir plenos efeitos técnicos, mediante a correspondente
+      Anotação/Registro de Responsabilidade Técnica (RRT/ART/TRT), constante no Anexo IV.</p>
+
+      <div style="margin-top:16mm; border-top:1px solid #D8D0C6; padding-top:6mm;">
+        <p style="margin-bottom:1mm">${(profile.companyAddress || '').split(',').pop()?.trim() || 'Local não informado'}, ${new Date().toLocaleDateString('pt-BR')}.</p>
+        <div style="margin-top:14mm; width:80mm; border-top:1px solid #2b2b2b; padding-top:2mm; font-size:9pt;">
+          <b>${profile.fullName}</b><br>
+          ${profile.professionalTitle || ''}${profile.professionalId ? ` — ${profile.professionalId}` : ''}<br>
+          ${profile.companyName || ''}
+        </div>
+      </div>
+
+      <div class="selo-amorimtech">
+        <div class="badge-circ">A</div>
+        <div class="txt"><b>Gerado pela plataforma Predial 4.0</b><br>AmorimTech Ecossistema 4.0 — tecnologia de inspeção predial</div>
+      </div>`;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {
