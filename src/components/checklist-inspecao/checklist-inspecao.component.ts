@@ -1819,6 +1819,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const qualificacao = this.gerarQualificacaoHtml(profile);
     const glossario = this.gerarGlossarioHtml(ativa.exibirGlossario ?? true);
     const ressalvas = this.gerarRessalvasHtml();
+    const metodologia = this.gerarMetodologiaHtml();
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
@@ -1832,6 +1833,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       ...((ativa.exibirGlossario ?? true) ? [{ href: 'sec-3', num: '3.0', label: 'Glossário' }] : []),
       { href: 'sec-4',  num: '4.0',  label: 'Normativo Técnico Aplicado' },
       { href: 'sec-5',  num: '5.0',  label: 'Ressalvas e Princípios' },
+      { href: 'sec-6',  num: '6.0',  label: 'Metodologia Aplicada' },
       { href: 'sec-7',  num: '7.0',  label: 'Caracterização do Objeto da Inspeção' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
@@ -2442,6 +2444,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 5.0 Ressalvas e Princípios -->
           ${ressalvas}
 
+          <!-- 6.0 Metodologia Aplicada -->
+          ${metodologia}
+
           <!-- 7.0 Caracterização do Objeto da Inspeção -->
           ${secao4}
 
@@ -2622,13 +2627,59 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     return `
       <h2 class="sec-h" id="sec-5"><span class="sn">5.0</span>Ressalvas e Princípios</h2>
       <div class="callout legal">
-        <p style="margin-bottom:2.5mm"><b>5.1.</b> A presente inspeção fundamenta-se em vistoria técnica visual, não destrutiva, não sendo empregados ensaios laboratoriais ou procedimentos destrutivos, salvo indicação expressa em contrário nas seções específicas deste laudo.</p>
+        <p style="margin-bottom:2.5mm"><b>5.1.</b> A presente inspeção fundamenta-se em vistoria técnica visual, não destrutiva, não sendo empregados ensaios laboratoriais ou procedures destrutivos, salvo indicação expressa em contrário nas seções específicas deste laudo.</p>
         <p style="margin-bottom:2.5mm"><b>5.2.</b> As conclusões e recomendações refletem exclusivamente as condições observadas na data da vistoria, não sendo possível ao Responsável Técnico garantir a inexistência de anomalias ocultas, não detectáveis por inspeção visual, ou supervenientes à data de emissão deste documento.</p>
         <p style="margin-bottom:2.5mm"><b>5.3.</b> A guarda, atualização e disponibilização dos documentos norteadores relacionados no Anexo I são de responsabilidade do contratante/responsável legal pela edificação, nos termos das ABNT NBR 5674 e NBR 14037. A ausência de documentação não impede a emissão do laudo, mas limita o alcance das conclusões às evidências sensoriais e documentais efetivamente disponibilizadas.</p>
         <p style="margin-bottom:2.5mm"><b>5.4.</b> Este documento não substitui, e tampouco dispensa, laudos, vistorias ou pareceres técnicos específicos exigidos por legislação municipal, estadual ou federal aplicável (Corpo de Bombeiros, vigilância sanitária, órgãos ambientais, entre outros).</p>
         <p style="margin-bottom:0"><b>5.5.</b> O presente laudo é considerado <b>documento provisório</b> até a efetiva assinatura, física ou digital, do Responsável Técnico e a correspondente emissão do RRT/ART/TRT, momento em que passa a produzir plenos efeitos técnicos e legais.</p>
       </div>
     `;
+  }
+
+  private gerarMetodologiaHtml(): string {
+    return `
+      <h2 class="sec-h" id="sec-6"><span class="sn">6.0</span>Metodologia Aplicada</h2>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">A inspeção segue as sete etapas metodológicas estabelecidas pela ABNT NBR 16747:2020, descritas a
+      seguir e correlacionadas com as seções deste laudo:</p>
+      <table class="t-std">
+        <thead><tr><th style="width:10%">Etapa</th><th style="width:48%">Descrição</th><th>Seção correspondente</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Caracterização do objeto da inspeção</td><td>7.0</td></tr>
+          <tr style="background:#F7F5F0;"><td>2</td><td>Levantamento e análise dos documentos norteadores</td><td>Anexo I</td></tr>
+          <tr><td>3</td><td>Vistoria no objeto da inspeção, incluindo anamnese</td><td>Síntese / Sistemas Inspecionados / Anamnese</td></tr>
+          <tr style="background:#F7F5F0;"><td>4</td><td>Diagnóstico do objeto da inspeção</td><td>Anexo III</td></tr>
+          <tr><td>5</td><td>Avaliação da manutenção e uso</td><td><span style="color:#8A949C;">bloco futuro</span></td></tr>
+          <tr style="background:#F7F5F0;"><td>6</td><td>Avaliação do grau de criticidade</td><td><span style="color:#8A949C;">bloco futuro</span></td></tr>
+          <tr><td>7</td><td>Conclusões e considerações finais</td><td><span style="color:#8A949C;">bloco futuro</span></td></tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:5mm;font-size:9.5pt;font-weight:bold;color:#132A41;margin-bottom:2mm;">Classificação das irregularidades identificadas:</p>
+      <table class="t-std">
+        <thead><tr><th style="width:16%">Categoria</th><th style="width:20%">Subtipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="4"><b>Anomalia</b><br><span style="font-size:7.5pt;color:#8A949C">origem em projeto, execução, materiais ou fatores externos</span></td><td>Endógena</td><td>Origem na própria edificação (projeto, materiais, execução).</td></tr>
+          <tr style="background:#F7F5F0;"><td>Exógena</td><td>Fatores externos, provocados por terceiros.</td></tr>
+          <tr><td>Natural</td><td>Fenômenos naturais e desgaste esperado dos materiais.</td></tr>
+          <tr style="background:#F7F5F0;"><td>Funcional</td><td>Envelhecimento natural / término da vida útil do componente.</td></tr>
+          <tr><td rowspan="4"><b>Falha</b><br><span style="font-size:7.5pt;color:#8A949C">origem no uso, operação ou manutenção</span></td><td>Planejamento</td><td>Procedimentos e especificações de manutenção inadequados.</td></tr>
+          <tr style="background:#F7F5F0;"><td>Execução</td><td>Manutenção executada de forma inadequada.</td></tr>
+          <tr><td>Operacional</td><td>Registros, controles e rondas de manutenção inadequados.</td></tr>
+          <tr style="background:#F7F5F0;"><td>Gerencial</td><td>Falta de controle de qualidade e acompanhamento de custos da manutenção.</td></tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:5mm;font-size:9.5pt;font-weight:bold;color:#132A41;margin-bottom:2mm;">Patamares de criticidade:</p>
+      <table class="t-std">
+        <thead><tr><th style="width:16%">Nível</th><th>Definição</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge p1">P1 — Crítico</span></td><td>Ações necessárias quando a perda de desempenho compromete a saúde e/ou a segurança dos usuários, e/ou a funcionalidade dos sistemas construtivos, com possíveis paralisações; comprometimento de durabilidade (vida útil) e/ou aumento expressivo de custo de manutenção e de recuperação. Também devem ser classificadas no patamar "Prioridade 1" as ações necessárias quando a perda de desempenho, real ou potencial, pode gerar riscos ao meio ambiente.</td></tr>
+          <tr style="background:#F7F5F0;"><td><span class="badge p2">P2 — Regular</span></td><td>Ações necessárias quando a perda parcial de desempenho (real ou potencial) tem impacto sobre a funcionalidade da edificação, sem prejuízo à operação direta de sistemas e sem comprometer a saúde e segurança dos usuários.</td></tr>
+          <tr><td><span class="badge p3">P3 — Mínimo</span></td><td>Ações necessárias quando a perda de desempenho (real ou potencial) pode ocasionar pequenos prejuízos à estética ou quando as ações necessárias são atividades programáveis e passíveis de planejamento, além de baixo ou nenhum comprometimento do valor da edificação. Neste caso, as ações podem ser feitas sem urgência porque a perda parcial de desempenho não tem impacto sobre a funcionalidade da edificação, não causa prejuízo à operação direta de sistemas e não compromete a saúde e segurança do usuário.</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:8pt;color:#8A949C;margin-top:2mm;line-height:1.5;">Matriz GUT (Gravidade × Urgência × Tendência): disponível como camada complementar de priorização, aplicada
+      de forma opcional a fichas específicas quando indicado pelo Responsável Técnico (ver Anexo III).</p>`;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {
