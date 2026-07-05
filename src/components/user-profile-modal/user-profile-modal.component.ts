@@ -108,6 +108,18 @@ export class UserProfileModalComponent {
     this.profile = { ...this.profile, companyLogoBase64: undefined };
   }
 
+  private readonly TITULO_POR_CATEGORIA: Record<string, string> = {
+    arquiteto: 'Arquiteto(a) e Urbanista',
+    engenheiro: 'Engenheiro(a) Civil',
+    tecnico: 'Técnico(a) Industrial em Edificações',
+  };
+
+  onCategoriaProfissionalChange(categoria: string): void {
+    console.log(`onCategoriaProfissionalChange disparado: ${categoria}`); // prova de evento
+    this.profile.categoriaProfissional = categoria as any;
+    this.profile.professionalTitle = this.TITULO_POR_CATEGORIA[categoria] || this.profile.professionalTitle;
+  }
+
   onLogout(): void {
     this.logout.emit();
   }
