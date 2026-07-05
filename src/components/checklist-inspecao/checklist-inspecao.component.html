@@ -758,6 +758,10 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="21" x2="9" y2="9"></line><line x1="3" y1="14" x2="9" y2="14"></line></svg>
               <span>Avaliação Manutenção</span>
             </button>
+            <button (click)="navegarParaAvaliacaoCriticidade()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-sky-100 active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+              <span>Avaliação Criticidade</span>
+            </button>
             <button (click)="exportarRelatorioPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-sm active:scale-95">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
               <span>Gerar Relatório</span>
@@ -2149,6 +2153,110 @@
               Voltar
             </button>
             <button (click)="salvarAvaliacaoManutencao(manutencaoTextarea.value); voltarDeAvaliacaoManutencao()"
+                    class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-all shadow-md active:scale-95 cursor-pointer">
+              Salvar e Voltar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODO 7: AVALIÇÃO DO GRAU DE CRITICIDADE -->
+  @if (modoExibicao() === 'AVALIACAO_CRITICIDADE' && vistoriaAtiva()) {
+    <div class="space-y-6">
+      <!-- Cabeçalho de Navegação -->
+      <div class="bg-white rounded-xl shadow-lg p-5 border border-slate-200 sticky top-0 z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-indigo-100 text-indigo-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-1 inline-block">
+            Seção 12.0 do Laudo
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Avaliação do Grau de Criticidade</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Vistoria: {{ vistoriaAtiva()?.buildingName }} · Consolidação das fichas do Anexo III</p>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button (click)="voltarDeAvaliacaoCriticidade()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-slate-200 active:scale-95 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Voltar à Inspeção</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Números Agregados (Sintese Grid) -->
+      @if (contagemCriticidadeTotal() > 0) {
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col items-center justify-center text-center">
+            <span class="text-3xl font-extrabold text-rose-600">{{ contagemCriticidadeP1() }}</span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Prioridade 1</span>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col items-center justify-center text-center">
+            <span class="text-3xl font-extrabold text-amber-500">{{ contagemCriticidadeP2() }}</span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Prioridade 2</span>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col items-center justify-center text-center">
+            <span class="text-3xl font-extrabold text-slate-500">{{ contagemCriticidadeP3() }}</span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Prioridade 3</span>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col items-center justify-center text-center">
+            <span class="text-3xl font-extrabold text-slate-900">{{ contagemCriticidadeTotal() }}</span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Total Geral</span>
+          </div>
+        </div>
+      }
+
+      <!-- Área de Edição e Sugestão -->
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+              </svg>
+              Análise do Grau de Criticidade (Agregação de Fichas)
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Este texto é sugerido com base nas fichas e no sistema mais recorrente, com total controle de edição.</p>
+          </div>
+          <div>
+            <button (click)="regerarSugestaoAvaliacaoCriticidade()" class="inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-4 py-2 rounded-lg text-xs transition-all border border-sky-200 cursor-pointer active:scale-95">
+              <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              <span>Regerar Sugestão (IA)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <!-- Alerta de Orientação -->
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-slate-700 leading-relaxed flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <div class="space-y-1">
+              <p class="font-bold text-amber-900">Diretrizes da Seção 12.0</p>
+              <p>O texto abaixo consolida o grau de criticidade das ocorrências do Anexo III. Ele destaca o total de Prioridade 1 (críticas), Prioridade 2 (regulares) e Prioridade 3 (mínimas), além de apontar os sistemas com maior número de manifestações patológicas para fins de priorização.</p>
+              <p class="font-semibold text-slate-800">Dica: suas alterações são mantidas automaticamente e não serão sobrescritas a menos que clique em "Regerar Sugestão (IA)".</p>
+            </div>
+          </div>
+
+          <!-- Textarea de edição -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Texto do Laudo (Editável)</label>
+            <textarea [value]="novoAvaliacaoCriticidadeTexto()"
+                      #criticidadeTextarea
+                      (blur)="salvarAvaliacaoCriticidade(criticidadeTextarea.value)"
+                      rows="14"
+                      placeholder="Análise estatística e gerencial dos patamares de criticidade..."
+                      class="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 focus:outline-none transition-all shadow-inner bg-slate-50/10 font-sans leading-relaxed"></textarea>
+          </div>
+
+          <!-- Rodapé de Ações do Card -->
+          <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button (click)="voltarDeAvaliacaoCriticidade()"
+                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-lg text-sm transition-all active:scale-95 cursor-pointer">
+              Voltar
+            </button>
+            <button (click)="salvarAvaliacaoCriticidade(criticidadeTextarea.value); voltarDeAvaliacaoCriticidade()"
                     class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-all shadow-md active:scale-95 cursor-pointer">
               Salvar e Voltar
             </button>

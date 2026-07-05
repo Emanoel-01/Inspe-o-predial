@@ -128,6 +128,7 @@ export interface Vistoria {
   anamnese?: Anamnese;
   exibirGlossario?: boolean;   // NOVO — Seção 3.0 do laudo; on por padrão (undefined = true)
   avaliacaoManutencaoTexto?: string;   // NOVO — Seção 11.0; texto sugerido automaticamente, sempre editável pelo RT
+  avaliacaoCriticidadeTexto?: string;   // NOVO — Seção 12.0; texto sugerido automaticamente, sempre editável pelo RT
 }
 
 export interface LaudoEmitido {
@@ -542,11 +543,27 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
     return Array.isArray(c) ? c : [];
   });
 
+  fichasAtivas = computed<{ item: ChecklistItem; f: FichaDano }[]>(() => {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) return [];
+    const res: { item: ChecklistItem; f: FichaDano }[] = [];
+    (ativa.items ?? []).forEach(item => {
+      (item.ocorrencias ?? []).forEach(f => res.push({ item, f }));
+    });
+    return res;
+  });
+
+  contagemCriticidadeP1 = computed(() => this.fichasAtivas().filter(x => x.f.criticidade === 'P1').length);
+  contagemCriticidadeP2 = computed(() => this.fichasAtivas().filter(x => x.f.criticidade === 'P2').length);
+  contagemCriticidadeP3 = computed(() => this.fichasAtivas().filter(x => x.f.criticidade === 'P3').length);
+  contagemCriticidadeTotal = computed(() => this.fichasAtivas().length);
+
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
-  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO' | 'AVALIACAO_MANUTENCAO'>('LISTA');
+  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO' | 'AVALIACAO_MANUTENCAO' | 'AVALIACAO_CRITICIDADE'>('LISTA');
   vistoriaEmEdicao = signal<Vistoria | null>(null);
   laudoSelecionado = signal<LaudoEmitido | null>(null);
   novoAvaliacaoManutencaoTexto = signal<string>('');
+  novoAvaliacaoCriticidadeTexto = signal<string>('');
 
   // Carregar os sistemas organizados da base de dados estática
   sistemasDisponiveis = computed(() => {
@@ -1729,6 +1746,78 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     this.salvarAvaliacaoManutencao(sugestao);
   }
 
+  private sugerirAvaliacaoCriticidade(vistoria: Vistoria): string {
+    const todasFichas: { item: ChecklistItem; ficha: FichaDano }[] = [];
+    (vistoria.items ?? []).forEach(item => {
+      (item.ocorrencias ?? []).forEach(ficha => todasFichas.push({ item, ficha }));
+    });
+
+    if (todasFichas.length === 0) {
+      return 'Não foram registradas ocorrências, anomalias ou falhas nesta vistoria até o momento, não havendo, ' +
+        'portanto, elementos para avaliação do grau de criticidade. Este texto pode ser editado livremente pelo ' +
+        'Responsável Técnico.';
+    }
+
+    const p1 = todasFichas.filter(f => f.ficha.criticidade === 'P1').length;
+    const p2 = todasFichas.filter(f => f.ficha.criticidade === 'P2').length;
+    const p3 = todasFichas.filter(f => f.ficha.criticidade === 'P3').length;
+    const pendentes = todasFichas.length - p1 - p2 - p3;
+
+    const porSistema = new Map<string, number>();
+    todasFichas.forEach(f => {
+      const s = f.item.systemTitle || 'Não identificado';
+      porSistema.set(s, (porSistema.get(s) ?? 0) + 1);
+    });
+    let sistemaMax = ''; let maxCount = 0;
+    porSistema.forEach((count, sistema) => { if (count > maxCount) { maxCount = count; sistemaMax = sistema; } });
+
+    const partes: string[] = [];
+    partes.push(`Das ${todasFichas.length} ocorrência(s) registrada(s) nesta vistoria, ${p1} ${p1 === 1 ? 'foi classificada' : 'foram classificadas'} ` +
+      `como Prioridade 1 (crítica), ${p2} como Prioridade 2 (regular) e ${p3} como Prioridade 3 (mínima)` +
+      `${pendentes > 0 ? `, com ${pendentes} ainda pendente(s) de classificação` : ''}.`);
+
+    if (p1 > 0) {
+      partes.push(`A presença de ${p1} ocorrência(s) de Prioridade 1 indica risco à saúde, segurança ou funcionalidade ` +
+        'dos sistemas construtivos, demandando intervenção prioritária e imediata, conforme detalhado nas fichas ' +
+        'correspondentes do Anexo III.');
+    }
+    if (sistemaMax && maxCount > 0) {
+      partes.push(`O sistema com maior concentração de ocorrências foi "${sistemaMax}" (${maxCount} ocorrência(s)), ` +
+        'merecendo atenção específica no planejamento de intervenções.');
+    }
+    partes.push('Recomenda-se que as ações corretivas sejam priorizadas conforme os patamares de criticidade ' +
+      'descritos na Seção 6.0 deste laudo, iniciando pelas ocorrências de Prioridade 1. Este texto foi sugerido ' +
+      'automaticamente a partir dos dados levantados e deve ser revisado pelo Responsável Técnico antes da emissão do laudo.');
+
+    return partes.join(' ');
+  }
+
+  navegarParaAvaliacaoCriticidade(): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
+    console.log('navegarParaAvaliacaoCriticidade disparado'); // prova de evento 0.4
+    const textoAtual = ativa.avaliacaoCriticidadeTexto?.trim();
+    this.novoAvaliacaoCriticidadeTexto.set(textoAtual || this.sugerirAvaliacaoCriticidade(ativa));
+    this.modoExibicao.set('AVALIACAO_CRITICIDADE');
+  }
+
+  voltarDeAvaliacaoCriticidade(): void {
+    this.modoExibicao.set('EXECUCAO');
+  }
+
+  salvarAvaliacaoCriticidade(texto: string): void {
+    console.log('salvarAvaliacaoCriticidade disparado'); // prova de evento 0.4
+    this.atualizarVistoriaAtiva({ avaliacaoCriticidadeTexto: texto });
+  }
+
+  regerarSugestaoAvaliacaoCriticidade(): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    console.log('regerarSugestaoAvaliacaoCriticidade disparado'); // prova de evento 0.4
+    const sugestao = this.sugerirAvaliacaoCriticidade(ativa);
+    this.novoAvaliacaoCriticidadeTexto.set(sugestao);
+    this.salvarAvaliacaoCriticidade(sugestao);
+  }
+
   voltarParaLista(): void {
     this.vistoriaAtiva.set(null);
     this.modoExibicao.set('LISTA');
@@ -1889,6 +1978,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const metodologia = this.gerarMetodologiaHtml();
     const diagnostico = this.gerarDiagnosticoHtml(itens);
     const avaliacaoManutencao = this.gerarAvaliacaoManutencaoHtml(ativa);
+    const avaliacaoCriticidade = this.gerarAvaliacaoCriticidadeHtml(ativa);
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
@@ -1907,6 +1997,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       { href: 'sec-9',  num: '9.0',  label: 'Vistoria no Objeto da Inspeção' },
       { href: 'sec-10', num: '10.0', label: 'Diagnóstico do Objeto da Inspeção' },
       { href: 'sec-11', num: '11.0', label: 'Avaliação da Manutenção e Uso' },
+      { href: 'sec-12', num: '12.0', label: 'Avaliação do Grau de Criticidade' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
       { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
@@ -2578,6 +2669,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 11.0 Avaliação da Manutenção e Uso -->
           ${avaliacaoManutencao}
 
+          <!-- 12.0 Avaliação do Grau de Criticidade -->
+          ${avaliacaoCriticidade}
+
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
 
@@ -2836,6 +2930,36 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     return `
       <h2 class="sec-h" id="sec-11"><span class="sn">11.0</span>Avaliação da Manutenção e Uso</h2>
       <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${texto}</p>`;
+  }
+
+  private gerarAvaliacaoCriticidadeHtml(ativa: Vistoria): string {
+    const todasFichas: { item: ChecklistItem; ficha: FichaDano }[] = [];
+    (ativa.items ?? []).forEach(item => {
+      (item.ocorrencias ?? []).forEach(ficha => todasFichas.push({ item, ficha }));
+    });
+    const p1 = todasFichas.filter(f => f.ficha.criticidade === 'P1').length;
+    const p2 = todasFichas.filter(f => f.ficha.criticidade === 'P2').length;
+    const p3 = todasFichas.filter(f => f.ficha.criticidade === 'P3').length;
+
+    const texto = (ativa.avaliacaoCriticidadeTexto && ativa.avaliacaoCriticidadeTexto.trim())
+      ? ativa.avaliacaoCriticidadeTexto
+      : this.sugerirAvaliacaoCriticidade(ativa);
+
+    const gridHtml = todasFichas.length > 0 ? `
+      <div class="sintese-grid">
+        <div class="sintese-card"><span class="big" style="color:#B23A48;">${p1}</span><span class="lbl">Prioridade 1</span></div>
+        <div class="sintese-card"><span class="big" style="color:#B77D1A;">${p2}</span><span class="lbl">Prioridade 2</span></div>
+        <div class="sintese-card"><span class="big" style="color:#6B7280;">${p3}</span><span class="lbl">Prioridade 3</span></div>
+        <div class="sintese-card"><span class="big">${todasFichas.length}</span><span class="lbl">Total de Ocorrências</span></div>
+      </div>` : '';
+
+    return `
+      <h2 class="sec-h" id="sec-12"><span class="sn">12.0</span>Avaliação do Grau de Criticidade</h2>
+      ${gridHtml}
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${texto}</p>
+      <p style="font-size:8pt;color:#8A949C;">Matriz GUT: não aplicada nesta vistoria por decisão do Responsável
+      Técnico, tendo em vista que a classificação por patamares de criticidade (P1/P2/P3) foi considerada
+      suficiente para a priorização das ocorrências identificadas.</p>`;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {
