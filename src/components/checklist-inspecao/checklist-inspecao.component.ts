@@ -129,6 +129,10 @@ export interface Vistoria {
   exibirGlossario?: boolean;   // NOVO — Seção 3.0 do laudo; on por padrão (undefined = true)
   avaliacaoManutencaoTexto?: string;   // NOVO — Seção 11.0; texto sugerido automaticamente, sempre editável pelo RT
   avaliacaoCriticidadeTexto?: string;   // NOVO — Seção 12.0; texto sugerido automaticamente, sempre editável pelo RT
+  conclusaoSinteseTexto?: string;         // NOVO — 13.1
+  conclusaoRiscosTexto?: string;          // NOVO — 13.2
+  conclusaoRecomendacoesTexto?: string;   // NOVO — 13.3
+  conclusaoConsideracoesTexto?: string;   // NOVO — 13.4
 }
 
 export interface LaudoEmitido {
@@ -559,11 +563,15 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   contagemCriticidadeTotal = computed(() => this.fichasAtivas().length);
 
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
-  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO' | 'AVALIACAO_MANUTENCAO' | 'AVALIACAO_CRITICIDADE'>('LISTA');
+  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO' | 'AVALIACAO_MANUTENCAO' | 'AVALIACAO_CRITICIDADE' | 'CONCLUSOES'>('LISTA');
   vistoriaEmEdicao = signal<Vistoria | null>(null);
   laudoSelecionado = signal<LaudoEmitido | null>(null);
   novoAvaliacaoManutencaoTexto = signal<string>('');
   novoAvaliacaoCriticidadeTexto = signal<string>('');
+  novoConclusaoSinteseTexto = signal<string>('');
+  novoConclusaoRiscosTexto = signal<string>('');
+  novoConclusaoRecomendacoesTexto = signal<string>('');
+  novoConclusaoConsideracoesTexto = signal<string>('');
 
   // Carregar os sistemas organizados da base de dados estática
   sistemasDisponiveis = computed(() => {
@@ -1818,6 +1826,143 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     this.salvarAvaliacaoCriticidade(sugestao);
   }
 
+  private sugerirConclusaoSintese(vistoria: Vistoria): string {
+    const stats = this.calcularEstatisticas(vistoria);
+    const todasFichas: FichaDano[] = [];
+    (vistoria.items ?? []).forEach(item => (item.ocorrencias ?? []).forEach(f => todasFichas.push(f)));
+    const p1 = todasFichas.filter(f => f.criticidade === 'P1').length;
+    const p2 = todasFichas.filter(f => f.criticidade === 'P2').length;
+    const p3 = todasFichas.filter(f => f.criticidade === 'P3').length;
+
+    if (stats.total === 0) {
+      return `A edificação ${vistoria.buildingName || 'objeto desta inspeção'} não possui tipologias inspecionadas ` +
+        'registradas até o momento, não sendo possível apresentar uma síntese conclusiva. Este texto pode ser ' +
+        'editado livremente pelo Responsável Técnico.';
+    }
+
+    return `A edificação ${vistoria.buildingName || 'objeto desta inspeção'} apresenta, das ${stats.total} ` +
+      `tipologias inspecionadas, ${stats.conformes} em conformidade e ${stats.naoConformes} em não conformidade, ` +
+      `correspondendo a uma taxa de conformidade de ${stats.taxaConformidade}%. Foram identificadas ` +
+      `${todasFichas.length} ocorrência(s), sendo ${p1} de criticidade P1, ${p2} de criticidade P2 e ${p3} de ` +
+      'criticidade P3. Este texto foi sugerido automaticamente a partir dos dados levantados e deve ser revisado ' +
+      'pelo Responsável Técnico.';
+  }
+
+  private sugerirConclusaoRiscos(vistoria: Vistoria): string {
+    const fichasP1: FichaDano[] = [];
+    (vistoria.items ?? []).forEach(item => (item.ocorrencias ?? []).forEach(f => { if (f.criticidade === 'P1') fichasP1.push(f); }));
+
+    if (fichasP1.length === 0) {
+      return 'Não foram identificadas ocorrências de Prioridade 1 (crítica) nesta vistoria. Os riscos identificados, ' +
+        'quando existentes, encontram-se detalhados nas fichas do Anexo III com criticidade P2 ou P3. Este texto ' +
+        'pode ser editado livremente pelo Responsável Técnico.';
+    }
+
+    const lista = fichasP1.map(f => `Ficha Nº ${String(f.numeroFicha ?? 0).padStart(3, '0')}` +
+      `${f.manifestacao ? ` (${f.manifestacao.slice(0, 80)}${f.manifestacao.length > 80 ? '…' : ''})` : ''}`).join('; ');
+
+    return `O principal risco identificado refere-se às ${fichasP1.length} ocorrência(s) de Prioridade 1 registrada(s) ` +
+      `nesta vistoria: ${lista}. Essas condições, se não corrigidas, podem comprometer a saúde, a segurança dos ` +
+      'usuários ou a funcionalidade dos sistemas construtivos. Este texto foi sugerido automaticamente a partir ' +
+      'dos dados levantados e deve ser revisado pelo Responsável Técnico.';
+  }
+
+  private sugerirConclusaoRecomendacoes(vistoria: Vistoria): string {
+    const todasFichas: FichaDano[] = [];
+    (vistoria.items ?? []).forEach(item => (item.ocorrencias ?? []).forEach(f => todasFichas.push(f)));
+    const p1 = todasFichas.filter(f => f.criticidade === 'P1').length;
+    const docsNaoDisp = (vistoria.documentosNorteadores ?? []).filter(d => d.disponibilidade === 'DND').length;
+
+    const partes: string[] = [];
+    if (p1 > 0) {
+      partes.push(`Recomenda-se, em caráter prioritário, a correção imediata das ${p1} ocorrência(s) de Prioridade 1 ` +
+        'identificadas, mediante intervenção de profissional habilitado.');
+    }
+    if (todasFichas.length > p1) {
+      partes.push('As demais ocorrências, de criticidade P2 e P3, devem ser corrigidas em prazo compatível com sua ' +
+        'classificação, conforme detalhado no Anexo III.');
+    }
+    if (docsNaoDisp > 0) {
+      partes.push(`Recomenda-se ainda a regularização dos ${docsNaoDisp} documento(s) norteador(es) formalmente não ` +
+        'disponibilizados, relacionados no Anexo I.');
+    }
+    if (partes.length === 0) {
+      partes.push('Não foram identificadas não conformidades que demandem ação corretiva imediata nesta vistoria.');
+    }
+    partes.push('Recomenda-se, por fim, a formalização e manutenção de um programa de manutenção preventiva, nos ' +
+      'termos da ABNT NBR 5674. Este texto foi sugerido automaticamente a partir dos dados levantados e deve ser ' +
+      'revisado pelo Responsável Técnico.');
+
+    return partes.join(' ');
+  }
+
+  private sugerirConclusaoConsideracoesFinais(vistoria: Vistoria): string {
+    return `O presente laudo reflete as condições observadas na edificação ${vistoria.buildingName || ''} na data ` +
+      'da vistoria, dentro do escopo e metodologia declarados nas Seções 6.0 e 7.0 deste documento. Recomenda-se ' +
+      'a adoção das medidas indicadas na Seção 13.3 e a reavaliação periódica dos sistemas construtivos, em ' +
+      'conformidade com a ABNT NBR 5674, como parte da gestão contínua da manutenção predial. Este texto foi ' +
+      'sugerido automaticamente e deve ser revisado pelo Responsável Técnico antes da emissão do laudo.';
+  }
+
+  navegarParaConclusoes(): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
+    console.log('navegarParaConclusoes disparado'); // prova de evento 0.4
+    this.novoConclusaoSinteseTexto.set(ativa.conclusaoSinteseTexto?.trim() || this.sugerirConclusaoSintese(ativa));
+    this.novoConclusaoRiscosTexto.set(ativa.conclusaoRiscosTexto?.trim() || this.sugerirConclusaoRiscos(ativa));
+    this.novoConclusaoRecomendacoesTexto.set(ativa.conclusaoRecomendacoesTexto?.trim() || this.sugerirConclusaoRecomendacoes(ativa));
+    this.novoConclusaoConsideracoesTexto.set(ativa.conclusaoConsideracoesTexto?.trim() || this.sugerirConclusaoConsideracoesFinais(ativa));
+    this.modoExibicao.set('CONCLUSOES');
+  }
+
+  voltarDeConclusoes(): void {
+    this.modoExibicao.set('EXECUCAO');
+  }
+
+  salvarConclusaoSintese(texto: string): void {
+    this.atualizarVistoriaAtiva({ conclusaoSinteseTexto: texto });
+  }
+
+  salvarConclusaoRiscos(texto: string): void {
+    this.atualizarVistoriaAtiva({ conclusaoRiscosTexto: texto });
+  }
+
+  salvarConclusaoRecomendacoes(texto: string): void {
+    this.atualizarVistoriaAtiva({ conclusaoRecomendacoesTexto: texto });
+  }
+
+  salvarConclusaoConsideracoes(texto: string): void {
+    this.atualizarVistoriaAtiva({ conclusaoConsideracoesTexto: texto });
+  }
+
+  regerarSugestaoConclusaoSintese(): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    const s = this.sugerirConclusaoSintese(ativa);
+    this.novoConclusaoSinteseTexto.set(s);
+    this.salvarConclusaoSintese(s);
+  }
+
+  regerarSugestaoConclusaoRiscos(): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    const s = this.sugerirConclusaoRiscos(ativa);
+    this.novoConclusaoRiscosTexto.set(s);
+    this.salvarConclusaoRiscos(s);
+  }
+
+  regerarSugestaoConclusaoRecomendacoes(): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    const s = this.sugerirConclusaoRecomendacoes(ativa);
+    this.novoConclusaoRecomendacoesTexto.set(s);
+    this.salvarConclusaoRecomendacoes(s);
+  }
+
+  regerarSugestaoConclusaoConsideracoes(): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    const s = this.sugerirConclusaoConsideracoesFinais(ativa);
+    this.novoConclusaoConsideracoesTexto.set(s);
+    this.salvarConclusaoConsideracoes(s);
+  }
+
   voltarParaLista(): void {
     this.vistoriaAtiva.set(null);
     this.modoExibicao.set('LISTA');
@@ -1979,6 +2124,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const diagnostico = this.gerarDiagnosticoHtml(itens);
     const avaliacaoManutencao = this.gerarAvaliacaoManutencaoHtml(ativa);
     const avaliacaoCriticidade = this.gerarAvaliacaoCriticidadeHtml(ativa);
+    const conclusoes = this.gerarConclusoesHtml(ativa);
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
@@ -1998,6 +2144,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       { href: 'sec-10', num: '10.0', label: 'Diagnóstico do Objeto da Inspeção' },
       { href: 'sec-11', num: '11.0', label: 'Avaliação da Manutenção e Uso' },
       { href: 'sec-12', num: '12.0', label: 'Avaliação do Grau de Criticidade' },
+      { href: 'sec-13', num: '13.0', label: 'Conclusões e Considerações Finais' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
       { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
@@ -2672,6 +2819,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 12.0 Avaliação do Grau de Criticidade -->
           ${avaliacaoCriticidade}
 
+          <!-- 13.0 Conclusões e Considerações Finais -->
+          ${conclusoes}
+
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
 
@@ -2960,6 +3110,24 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       <p style="font-size:8pt;color:#8A949C;">Matriz GUT: não aplicada nesta vistoria por decisão do Responsável
       Técnico, tendo em vista que a classificação por patamares de criticidade (P1/P2/P3) foi considerada
       suficiente para a priorização das ocorrências identificadas.</p>`;
+  }
+
+  private gerarConclusoesHtml(ativa: Vistoria): string {
+    const sintese = (ativa.conclusaoSinteseTexto?.trim()) || this.sugerirConclusaoSintese(ativa);
+    const riscos = (ativa.conclusaoRiscosTexto?.trim()) || this.sugerirConclusaoRiscos(ativa);
+    const recomendacoes = (ativa.conclusaoRecomendacoesTexto?.trim()) || this.sugerirConclusaoRecomendacoes(ativa);
+    const consideracoes = (ativa.conclusaoConsideracoesTexto?.trim()) || this.sugerirConclusaoConsideracoesFinais(ativa);
+
+    return `
+      <h2 class="sec-h" id="sec-13"><span class="sn">13.0</span>Conclusões e Considerações Finais</h2>
+      <p style="margin-top:4mm;margin-bottom:1.5mm;font-weight:bold;font-size:9.5pt;color:#132A41;">13.1 Síntese Geral</p>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${sintese}</p>
+      <p style="margin-top:4mm;margin-bottom:1.5mm;font-weight:bold;font-size:9.5pt;color:#132A41;">13.2 Riscos Identificados</p>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${riscos}</p>
+      <p style="margin-top:4mm;margin-bottom:1.5mm;font-weight:bold;font-size:9.5pt;color:#132A41;">13.3 Recomendações Prioritárias</p>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${recomendacoes}</p>
+      <p style="margin-top:4mm;margin-bottom:1.5mm;font-weight:bold;font-size:9.5pt;color:#132A41;">13.4 Considerações Finais</p>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${consideracoes}</p>`;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {

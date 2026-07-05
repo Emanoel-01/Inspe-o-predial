@@ -762,6 +762,10 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
               <span>Avaliação Criticidade</span>
             </button>
+            <button (click)="navegarParaConclusoes()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-sky-100 active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+              <span>Conclusões</span>
+            </button>
             <button (click)="exportarRelatorioPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-sm active:scale-95">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
               <span>Gerar Relatório</span>
@@ -2261,6 +2265,162 @@
               Salvar e Voltar
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODO: CONCLUSOES (Seção 13.0 Conclusões e Considerações Finais) -->
+  @if (modoExibicao() === 'CONCLUSOES' && vistoriaAtiva()) {
+    <div class="space-y-6">
+      <!-- Cabeçalho de Navegação -->
+      <div class="bg-white rounded-xl shadow-lg p-5 border border-slate-200 sticky top-0 z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-indigo-100 text-indigo-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-1 inline-block">
+            Seção 13.0 do Laudo
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Conclusões e Considerações Finais</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Vistoria: {{ vistoriaAtiva()?.buildingName }} · 4 blocos independentes e sempre editáveis</p>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button (click)="voltarDeConclusoes()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-slate-200 active:scale-95 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Voltar à Inspeção</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Alerta Geral -->
+      <div class="bg-sky-50 border border-sky-200 rounded-xl p-4 text-xs text-slate-700 leading-relaxed flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-sky-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 11.263 1.25l-.042.02a.75.75 0 01-.263-1.25zM12 18.75A6.75 6.75 0 1012 5.25a6.75 6.75 0 000 13.5z" />
+        </svg>
+        <div class="space-y-1">
+          <p class="font-bold text-sky-950">Dinâmica dos Textos Sugeridos</p>
+          <p>Cada bloco possui seu próprio algoritmo de sugestão independente (IA) com base nas tipologias inspecionadas, ocorrências do Anexo III, criticidades e documentos norteadores. Clicar em "Sugerir novamente" em um bloco recalcula e substitui <b>apenas</b> o texto correspondente, mantendo os outros três blocos intactos. Seus textos editados são salvos automaticamente ao sair do campo (blur).</p>
+        </div>
+      </div>
+
+      <!-- 13.1 Síntese Geral -->
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+              13.1 Síntese Geral do Grau de Conformidade
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Visão estatística de conformidade, total de vistorias, quantidade de ocorrências por criticidade.</p>
+          </div>
+          <button (click)="regerarSugestaoConclusaoSintese()" class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-all border border-indigo-200 cursor-pointer active:scale-95">
+            <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>Sugerir novamente</span>
+          </button>
+        </div>
+        <div class="p-5">
+          <textarea [value]="novoConclusaoSinteseTexto()"
+                    #sinteseTextarea
+                    (blur)="salvarConclusaoSintese(sinteseTextarea.value)"
+                    rows="6"
+                    placeholder="Sua análise da taxa de conformidade e panorama geral..."
+                    class="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all shadow-inner bg-slate-50/10 font-sans leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <!-- 13.2 Riscos Identificados -->
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              13.2 Riscos Identificados à Segurança e Funcionalidade
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Foco prioritário nas manifestações patológicas críticas de Prioridade 1 (P1).</p>
+          </div>
+          <button (click)="regerarSugestaoConclusaoRiscos()" class="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-all border border-rose-200 cursor-pointer active:scale-95">
+            <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>Sugerir novamente</span>
+          </button>
+        </div>
+        <div class="p-5">
+          <textarea [value]="novoConclusaoRiscosTexto()"
+                    #riscosTextarea
+                    (blur)="salvarConclusaoRiscos(riscosTextarea.value)"
+                    rows="6"
+                    placeholder="Análise de riscos à segurança e integridade das estruturas..."
+                    class="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 focus:outline-none transition-all shadow-inner bg-slate-50/10 font-sans leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <!-- 13.3 Recomendações Prioritárias -->
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              13.3 Recomendações Prioritárias e Plano de Ação
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Diretrizes urgentes, prazos compatíveis para P2/P3 e regularização de documentos.</p>
+          </div>
+          <button (click)="regerarSugestaoConclusaoRecomendacoes()" class="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-all border border-amber-200 cursor-pointer active:scale-95">
+            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>Sugerir novamente</span>
+          </button>
+        </div>
+        <div class="p-5">
+          <textarea [value]="novoConclusaoRecomendacoesTexto()"
+                    #recomendacoesTextarea
+                    (blur)="salvarConclusaoRecomendacoes(recomendacoesTextarea.value)"
+                    rows="6"
+                    placeholder="Instruções para correções prioritárias..."
+                    class="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none transition-all shadow-inner bg-slate-50/10 font-sans leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <!-- 13.4 Considerações Finais -->
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              13.4 Considerações Finais e Manutenção Preventiva
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Conformidade com a ABNT NBR 5674, caráter temporal do laudo e diretrizes gerais.</p>
+          </div>
+          <button (click)="regerarSugestaoConclusaoConsideracoes()" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-all border border-emerald-200 cursor-pointer active:scale-95">
+            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>Sugerir novamente</span>
+          </button>
+        </div>
+        <div class="p-5">
+          <textarea [value]="novoConclusaoConsideracoesTexto()"
+                    #consideracoesTextarea
+                    (blur)="salvarConclusaoConsideracoes(consideracoesTextarea.value)"
+                    rows="6"
+                    placeholder="Enquadramento normativo, periodicidade e encerramento..."
+                    class="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition-all shadow-inner bg-slate-50/10 font-sans leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <!-- Rodapé Geral de Ações -->
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 p-5 flex justify-between items-center gap-3">
+        <p class="text-xs text-slate-400">Todos os 4 blocos são salvos automaticamente ao perder o foco (blur).</p>
+        <div class="flex items-center gap-3">
+          <button (click)="voltarDeConclusoes()"
+                  class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-lg text-sm transition-all active:scale-95 cursor-pointer">
+            Voltar
+          </button>
+          <button (click)="salvarConclusaoSintese(sinteseTextarea.value); salvarConclusaoRiscos(riscosTextarea.value); salvarConclusaoRecomendacoes(recomendacoesTextarea.value); salvarConclusaoConsideracoes(consideracoesTextarea.value); voltarDeConclusoes()"
+                  class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 px-7 rounded-lg text-sm transition-all shadow-md active:scale-95 cursor-pointer">
+            Salvar tudo e Voltar
+          </button>
         </div>
       </div>
     </div>
