@@ -47,9 +47,9 @@ export class AppComponent implements OnInit {
   private dbService = inject(VistoriaDbService);
   todasVistorias = signal<Vistoria[]>([]);
 
-  private readonly EMAIL_ADM = 'seu_email_pessoal@dominio.com';
-  private readonly SENHA_ADM = 'uma-senha-só-sua-aqui';
-  private readonly PIN_ADM = '1234';
+  private readonly EMAIL_ADM = 'emanoel.s.amorim@gmail.com';
+  private readonly SENHA_ADM = 'Amorim$123*';
+  private readonly PIN_ADM = '8803';
 
   mostrarPinAdm = signal<boolean>(false);
   admAcessoLiberado = signal<boolean>(false);

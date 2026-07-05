@@ -184,7 +184,7 @@ export class AdminPanelComponent {
       return;
     }
     this.notificationService.addNotification(title, message);
-    this.toastService.show('Notificação disparada para todos os usuários ativos!', 'success');
+    this.toastService.show('Notificação adicionada à sua lista local. Este app não tem backend — a notificação não é enviada a outros dispositivos.', 'success');
   }
 
   clearNotifications(): void {
