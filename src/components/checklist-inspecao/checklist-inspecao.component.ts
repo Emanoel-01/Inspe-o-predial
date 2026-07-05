@@ -1835,6 +1835,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       { href: 'sec-5',  num: '5.0',  label: 'Ressalvas e Princípios' },
       { href: 'sec-6',  num: '6.0',  label: 'Metodologia Aplicada' },
       { href: 'sec-7',  num: '7.0',  label: 'Caracterização do Objeto da Inspeção' },
+      { href: 'sec-9',  num: '9.0',  label: 'Vistoria no Objeto da Inspeção' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
       { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
@@ -2450,8 +2451,29 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 7.0 Caracterização do Objeto da Inspeção -->
           ${secao4}
 
-          <!-- Síntese da Inspeção -->
-          <h2 class="sec-h">Síntese da Inspeção</h2>
+          <!-- 9.0 Vistoria no Objeto da Inspeção -->
+          <h2 class="sec-h" id="sec-9"><span class="sn">9.0</span>Vistoria no Objeto da Inspeção</h2>
+
+          <!-- 9.1 Anamnese -->
+          ${anamnese}
+
+          <!-- 9.2 Sistemas Inspecionados -->
+          <h3 style="font-size:10pt;font-weight:700;color:#132A41;margin:4mm 0 2mm;">9.2 Sistemas Inspecionados — Tabela-Resumo</h3>
+          <table class="t-std">
+            <thead>
+              <tr>
+                <th style="width:30%">Tipologia / Item</th>
+                <th style="width:50%">Procedimento e Critério de Inspeção</th>
+                <th style="width:20%;text-align:center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <!-- 9.3 Síntese da Inspeção -->
+          <h3 style="font-size:10pt;font-weight:700;color:#132A41;margin:4mm 0 2mm;">9.3 Síntese da Inspeção</h3>
           <div class="sintese-grid">
             <div class="sintese-card">
               <span class="big">${estatisticas.total}</span>
@@ -2478,24 +2500,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
               <span class="lbl">Conformidade</span>
             </div>
           </div>
-
-          <!-- Sistemas Inspecionados — Tabela-Resumo -->
-          <h2 class="sec-h">Sistemas Inspecionados — Tabela-Resumo</h2>
-          <table class="t-std">
-            <thead>
-              <tr>
-                <th style="width:30%">Tipologia / Item</th>
-                <th style="width:50%">Procedimento e Critério de Inspeção</th>
-                <th style="width:20%;text-align:center">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-
-          <!-- Anamnese — Histórico e Constatações -->
-          ${anamnese}
 
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
@@ -3184,7 +3188,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     let html = `
       <div style="page-break-before:always;margin-top:8mm;">
-        <h2 class="sec-h">Anamnese — Histórico e Constatações</h2>
+        <h3 style="font-size:10pt;font-weight:700;color:#132A41;margin:4mm 0 2mm;">9.1 Anamnese — Histórico e Constatações</h3>
     `;
 
     const labels: Record<string, string> = {
