@@ -1810,6 +1810,8 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     }
 
     const secao4 = this.gerarSecao4Html(ativa);
+    const qualificacao = this.gerarQualificacaoHtml(profile);
+    const ressalvas = this.gerarRessalvasHtml();
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
@@ -1819,7 +1821,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
 
     const sumarioEntries = [
       { href: 'sec-1',  num: '1.0',  label: 'Apresentação' },
+      { href: 'sec-2',  num: '2.0',  label: 'Qualificação do Responsável Técnico' },
       { href: 'sec-4',  num: '4.0',  label: 'Normativo Técnico Aplicado' },
+      { href: 'sec-5',  num: '5.0',  label: 'Ressalvas e Princípios' },
       { href: 'sec-7',  num: '7.0',  label: 'Caracterização do Objeto da Inspeção' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
@@ -1883,6 +1887,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
               .no-break { break-inside: avoid; page-break-inside: avoid; }
               tr { page-break-inside: avoid; }
               .print-tbody-tr, .print-tbody-td { page-break-inside: auto !important; }
+              thead { display: table-header-group; }
             }
 
             /* === CABEÇALHO/RODAPÉ via TABLE — repete em TODAS as páginas no Chrome === */
@@ -2260,6 +2265,17 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             .sem-foto-note { padding: 3mm; background: #E8F5EE; border-bottom: 1px solid #D8D0C6; font-size: 7.5pt; color: #2E7D5B; font-style: italic; }
             .na-aviso { padding: 3mm; background: #F5F2EC; border-bottom: 1px solid #D8D0C6; font-size: 7.5pt; color: #4A5A66; font-style: italic; }
             .no-break { break-inside: avoid; page-break-inside: avoid; }
+            .callout.legal {
+              border-left: 3.5px solid #132A41;
+              background: #F8FAFC;
+              padding: 4mm 5mm;
+              border-radius: 0 4px 4px 0;
+              margin: 4mm 0;
+              font-size: 8.5pt;
+              line-height: 1.65;
+              color: #2b2b2b;
+              text-align: justify;
+            }
           </style>
       </head>
       <body>
@@ -2378,6 +2394,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             por sistemas e tipologias prediais.
           </p>
 
+          <!-- 2.0 Qualificação do Responsável Técnico -->
+          ${qualificacao}
+
           <!-- 4.0 Normativo Técnico Aplicado -->
           <h2 class="sec-h" id="sec-4"><span class="sn">4.0</span>Normativo Técnico Aplicado</h2>
           ${(() => {
@@ -2408,6 +2427,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
             }
             return html;
           })()}
+
+          <!-- 5.0 Ressalvas e Princípios -->
+          ${ressalvas}
 
           <!-- 7.0 Caracterização do Objeto da Inspeção -->
           ${secao4}
@@ -2512,6 +2534,44 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     novaJanela.document.write(htmlContent);
     novaJanela.document.close();
     setTimeout(() => novaJanela.print(), 1500);
+  }
+
+  private gerarQualificacaoHtml(profile: UserProfile): string {
+    const categoria = profile.categoriaProfissional || 'arquiteto';
+    const nome = profile.fullName;
+    const registro = profile.professionalId || '';
+    const empresa = profile.companyName || '';
+    const cnpj = profile.companyCnpj || '';
+
+    let baseLegal = '';
+    if (categoria === 'arquiteto') {
+      baseLegal = `no gozo das atribuições que lhe são conferidas pela Lei Federal nº 12.378, de 31 de dezembro de 2010, e pela Resolução CAU/BR nº 21, de 25 de abril de 2012, que tipifica os serviços de vistoria, perícia, avaliação, monitoramento e laudo técnico para efeito de registro de responsabilidade técnica`;
+    } else if (categoria === 'engenheiro') {
+      baseLegal = `no gozo das atribuições que lhe são conferidas pela Lei Federal nº 5.194, de 24 de dezembro de 1966, que regula o exercício da profissão de Engenheiro, e pela Resolução CONFEA nº 218, de 29 de junho de 1973, que discrimina as atividades das diferentes modalidades profissionais, incluindo vistoria, perícia, avaliação, laudo e parecer técnico`;
+    } else {
+      baseLegal = `no gozo das atribuições que lhe são conferidas pelas Resoluções CFT nº 058, de 2019, e nº 108, de 2020, do Conselho Federal dos Técnicos Industriais, observados os limites de área construída e tipologia construtiva estabelecidos nos normativos de habilitação da categoria`;
+    }
+
+    return `
+      <h2 class="sec-h" id="sec-2"><span class="sn">2.0</span>Qualificação do Responsável Técnico</h2>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">O presente Laudo Técnico de Inspeção Predial foi elaborado por <b>${nome}</b>, inscrito(a) sob o registro <b>${registro}</b>, atuando pela empresa <b>${empresa}</b>${cnpj ? ` (CNPJ ${cnpj})` : ''}, ${baseLegal}.</p>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">Este documento observa ainda a habilitação técnica na área de conhecimento específica do objeto da perícia, nos termos do art. 156 do Código de Processo Civil (Lei nº 13.105, de 16 de março de 2015), que reconhece as atividades de vistoria, perícia e emissão de laudos técnicos como privativas de profissionais de nível superior ou técnico legalmente habilitados.</p>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">O profissional assume integral responsabilidade técnica pelas análises, diagnósticos e recomendações constantes deste documento, mediante emissão do respectivo Registro/Anotação de Responsabilidade Técnica (RRT/ART/TRT), constante no Anexo IV.</p>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">A responsabilidade técnica aqui assumida está circunscrita ao escopo, à metodologia e ao nível de inspeção declarados nas Seções 6.0 e 7.0 deste laudo, não se estendendo a sistemas, elementos ou condições não abrangidos pela inspeção visual realizada na data informada.</p>
+    `;
+  }
+
+  private gerarRessalvasHtml(): string {
+    return `
+      <h2 class="sec-h" id="sec-5"><span class="sn">5.0</span>Ressalvas e Princípios</h2>
+      <div class="callout legal">
+        <p style="margin-bottom:2.5mm"><b>5.1.</b> A presente inspeção fundamenta-se em vistoria técnica visual, não destrutiva, não sendo empregados ensaios laboratoriais ou procedimentos destrutivos, salvo indicação expressa em contrário nas seções específicas deste laudo.</p>
+        <p style="margin-bottom:2.5mm"><b>5.2.</b> As conclusões e recomendações refletem exclusivamente as condições observadas na data da vistoria, não sendo possível ao Responsável Técnico garantir a inexistência de anomalias ocultas, não detectáveis por inspeção visual, ou supervenientes à data de emissão deste documento.</p>
+        <p style="margin-bottom:2.5mm"><b>5.3.</b> A guarda, atualização e disponibilização dos documentos norteadores relacionados no Anexo I são de responsabilidade do contratante/responsável legal pela edificação, nos termos das ABNT NBR 5674 e NBR 14037. A ausência de documentação não impede a emissão do laudo, mas limita o alcance das conclusões às evidências sensoriais e documentais efetivamente disponibilizadas.</p>
+        <p style="margin-bottom:2.5mm"><b>5.4.</b> Este documento não substitui, e tampouco dispensa, laudos, vistorias ou pareceres técnicos específicos exigidos por legislação municipal, estadual ou federal aplicável (Corpo de Bombeiros, vigilância sanitária, órgãos ambientais, entre outros).</p>
+        <p style="margin-bottom:0"><b>5.5.</b> O presente laudo é considerado <b>documento provisório</b> até a efetiva assinatura, física ou digital, do Responsável Técnico e a correspondente emissão do RRT/ART/TRT, momento em que passa a produzir plenos efeitos técnicos e legais.</p>
+      </div>
+    `;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {

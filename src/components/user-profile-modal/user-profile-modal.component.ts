@@ -31,6 +31,7 @@ export class UserProfileModalComponent {
     companySite: 'https://suaempresa.com.br',
     socialNetworkLabel: 'Instagram',
     socialNetworkUrl: 'https://instagram.com/suaempresa',
+    categoriaProfissional: 'arquiteto',
   };
 
   saveState = signal<'idle' | 'saving' | 'saved'>('idle');
