@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predial 4.0 — Simulador Standalone</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Customs for custom scrolling and layout spacing */
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- TOP SANDBOX SIMULATOR BAR -->
+  <div class="bg-slate-900 text-white text-[11px] px-4 py-1.5 flex justify-between items-center shrink-0 border-b border-white/10">
+    <div class="flex items-center gap-2">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span class="font-mono text-slate-300">Modo Demonstração Estática — "Predial 4.0" (Fluxo de Criação Completo)</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-slate-400">Nenhum arquivo do app original alterado</span>
+      <span class="bg-amber-600 text-white px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider">SANDBOX V2</span>
+    </div>
+  </div>
+
+  <!-- MAIN WRAPPER -->
+  <div class="flex-1 flex flex-col relative" id="app-container">
+
+    <!-- 1. TELA DE LOGIN (Replica do login real) -->
+    <div id="view-login" class="flex-1 flex items-center justify-center bg-slate-100 p-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-display font-bold text-slate-900 tracking-tight">Predial <span class="text-sky-600">4.0</span></h1>
+          <p class="text-slate-500 text-sm mt-1.5">Plano Interativo de Manutenção Predial</p>
+        </div>
+        <form onsubmit="handleLogin(event)" class="space-y-5">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider">E-mail Corporativo</label>
+            <input type="email" id="login-email" value="emanoel.s.amorim@gmail.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider">Senha de Acesso</label>
+            <input type="password" id="login-password" value="Amorim$123*" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+          </div>
+          <div class="pt-2 space-y-3">
+            <button type="submit" class="w-full bg-slate-900 text-white font-bold py-3 px-4 rounded-xl hover:bg-slate-800 transition-colors shadow-sm">Entrar como Admin</button>
+            <button type="button" onclick="bypassLogin()" class="w-full bg-slate-100 text-slate-700 font-bold py-3 px-4 rounded-xl hover:bg-slate-200 transition-colors">Acessar como Convidado (Modo Demo)</button>
+          </div>
+        </form>
+        <div class="mt-6 pt-4 border-t border-slate-100 text-center">
+          <p class="text-[10px] text-slate-400 font-mono">Credenciais Admin padrão já preenchidas. O simulador aceita qualquer credencial para facilitação.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. SHELL DA PLATAFORMA (SIDEBAR + TOPBAR + VIEWS NAVEGAVEIS) -->
+    <div id="view-shell" class="hidden flex-1 flex flex-col lg:flex-row">
+      
+      <!-- SIDEBAR -->
+      <aside class="w-full lg:w-64 bg-slate-900 text-slate-200 p-5 shrink-0 flex flex-col justify-between border-r border-slate-800">
+        <div class="space-y-6">
+          <div class="flex items-center gap-2 pb-4 border-b border-slate-800">
+            <div class="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-white font-display">P</div>
+            <div>
+              <h2 class="font-display font-bold text-white text-base">Predial 4.0</h2>
+              <p class="text-[9px] text-sky-400 uppercase tracking-widest font-bold">Ecossistema Central</p>
+            </div>
+          </div>
+          <nav class="space-y-1">
+            <button onclick="navigate('visao-geral')" id="btn-nav-visao-geral" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-colors text-white bg-slate-800">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"/></svg>
+              Visão Geral
+            </button>
+            <button onclick="navigate('checklist-lista')" id="btn-nav-checklist" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-colors text-slate-400 hover:bg-slate-800 hover:text-white">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z"/></svg>
+              Plano de Vistorias
+            </button>
+          </nav>
+        </div>
+        <div class="pt-4 border-t border-slate-800 space-y-1">
+          <button onclick="startTour()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l3.813-1.096L16 21l-.813-5.096L19 12.5l-4.5-.313L13 8l-1.5 4.187L7 12.5l2.813 3.404z"/></svg>
+            Tour do Sistema
+          </button>
+          <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-rose-400 hover:bg-rose-950/30 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+            Sair do Simulador
+          </button>
+        </div>
+      </aside>
+
+      <!-- CONTENT BODY -->
+      <div class="flex-1 flex flex-col min-w-0">
+        
+        <!-- HEADER / TOPBAR (Replica do topbar real) -->
+        <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
+          <div>
+            <h3 class="font-display font-bold text-slate-900 text-lg" id="shell-title">Visão Geral</h3>
+          </div>
+          <div class="flex items-center gap-4">
+            <!-- Notifications system dropdown simulation -->
+            <div class="relative">
+              <button onclick="toggleNotifications()" class="relative p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full"></span>
+              </button>
+              <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+                <div class="p-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">Alertas Ativos</h4>
+                  <span class="text-[10px] text-sky-600 font-bold">Local</span>
+                </div>
+                <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                  <div class="p-3 text-xs hover:bg-slate-50">
+                    <p class="font-bold text-slate-800">Vistoria Pendente</p>
+                    <p class="text-slate-500 mt-0.5">Edifício Jardins do Atlântico necessita de emissão de laudo.</p>
+                  </div>
+                  <div class="p-3 text-xs hover:bg-slate-50">
+                    <p class="font-bold text-slate-800">Dica Pedagógica</p>
+                    <p class="text-slate-500 mt-0.5">Utilize o bypass de câmera para carregar a evidência fotográfica real da fissura.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Profile widget -->
+            <button onclick="openProfileModal()" class="flex items-center gap-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-all">
+              <span class="w-6 h-6 rounded-full bg-slate-800 text-white text-xs font-bold flex items-center justify-center">EA</span>
+              <span class="hidden sm:inline">Emanoel S. Amorim</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- VIEW CONTAINERS -->
+        <div class="flex-1 overflow-y-auto p-6 custom-scroll relative">
+
+          <!-- VIEW: VISÃO GERAL -->
+          <div id="subview-visao-geral" class="space-y-6">
+            <!-- Instruction block -->
+            <div class="bg-sky-50 border border-sky-100 rounded-2xl p-4 flex gap-3 items-start">
+              <div class="p-1.5 bg-sky-500/10 text-sky-600 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.084.67l-.147.07a1.5 1.5 0 01-1.084-.072l-.041-.02m0 0a1.5 1.5 0 011.084-2.12l.147-.03a.75.75 0 111.084.67l-.041.02m-1.084 1.48v3M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-sky-900 uppercase tracking-wider">Orientação da Etapa 1</p>
+                <p class="text-slate-600 text-xs mt-1">Este é o painel inicial do ecossistema. Para começar o simulador de vistoria completo, clique em <strong>"Acessar Ecossistema Central"</strong> abaixo ou no menu lateral <strong>"Plano de Vistorias"</strong>.</p>
+              </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-slate-900 via-sky-950 to-slate-950 text-white rounded-3xl p-8 sm:p-12 shadow-2xl overflow-hidden relative">
+              <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.15),transparent_45%)]"></div>
+              <div class="relative z-10 max-w-2xl space-y-5">
+                <span class="inline-flex items-center gap-1.5 bg-sky-500/10 text-sky-400 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest border border-sky-500/20">
+                  <span class="w-2 h-2 bg-sky-400 rounded-full animate-pulse"></span> ECOSSISTEMA AMORIM TECH
+                </span>
+                <h1 class="text-4xl font-display font-bold tracking-tight leading-none text-white">Predial <span class="text-sky-400">4.0</span></h1>
+                <h2 class="text-lg font-bold text-sky-200">Sua Plataforma de Gestão e Inteligência Predial Avançada</h2>
+                <p class="text-slate-300 text-sm leading-relaxed">O Predial 4.0 une dados estruturados, automação e inteligência artificial para eliminar burocracias, reduzir incertezas técnicas e garantir a total segurança das edificações.</p>
+                <button onclick="navigate('checklist-lista')" class="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-bold px-6 py-3.5 rounded-2xl shadow-lg text-sm transition-all transform hover:-translate-y-0.5">
+                  Acessar Ecossistema Central
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: CHECKLIST LISTA (MODO 1: Listagem das vistorias existentes) -->
+          <div id="subview-checklist-lista" class="hidden space-y-6">
+            <!-- Instruction block -->
+            <div class="bg-sky-50 border border-sky-100 rounded-2xl p-4 flex gap-3 items-start">
+              <div class="p-1.5 bg-sky-500/10 text-sky-600 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.084.67l-.147.07a1.5 1.5 0 01-1.084-.072l-.041-.02m0 0a1.5 1.5 0 011.084-2.12l.147-.03a.75.75 0 111.084.67l-.041.02m-1.084 1.48v3M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-sky-900 uppercase tracking-wider">Orientação da Etapa 2</p>
+                <p class="text-slate-600 text-xs mt-1">Aqui você visualiza todas as vistorias abertas em seu portfólio. Para iniciar o fluxo guiado, clique no botão azul <strong>"+ Nova Vistoria"</strong> no canto superior direito.</p>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div>
+                <h3 class="text-lg font-bold text-slate-900">Histórico de Vistorias em Aberto</h3>
+                <p class="text-slate-500 text-xs">Acompanhe e configure as ordens de vistorias técnicas registradas</p>
+              </div>
+              <button onclick="openChecklistCreation()" class="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                Nova Vistoria
+              </button>
+            </div>
+
+            <!-- List simulation -->
+            <div class="grid gap-4">
+              <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold text-[10px] uppercase">Em Execução</span>
+                    <span class="text-slate-400 text-xs">ID: demo-vist-01</span>
+                  </div>
+                  <h4 class="font-display font-bold text-slate-800 text-base">Edifício Jardins do Atlântico</h4>
+                  <p class="text-slate-500 text-xs">Rua dos Navegantes, 245 — Boa Viagem, Recife/PE</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="openChecklistCreation()" class="px-4 py-2 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors">Configurar</button>
+                  <button onclick="startSimulationWithDefaults()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors">Abrir Execução</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: CHECKLIST CRIACAO (MODO 2: Configuração e Criação) -->
+          <div id="subview-checklist-criacao" class="hidden space-y-6">
+            <!-- Instruction block -->
+            <div class="bg-sky-50 border border-sky-100 rounded-2xl p-4 flex gap-3 items-start">
+              <div class="p-1.5 bg-sky-500/10 text-sky-600 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.084.67l-.147.07a1.5 1.5 0 01-1.084-.072l-.041-.02m0 0a1.5 1.5 0 011.084-2.12l.147-.03a.75.75 0 111.084.67l-.041.02m-1.084 1.48v3M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-sky-900 uppercase tracking-wider">Orientação da Etapa 3</p>
+                <p class="text-slate-600 text-xs mt-1">Preencha ou confirme os dados básicos do imóvel. Na parte inferior, observe as tipologias de sistemas pré-selecionadas. Clique em <strong>"Criar Vistoria Técnica"</strong> para prosseguir para a prancheta de campo.</p>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                  <h3 class="font-display font-bold text-slate-900 text-lg">Definir e Iniciar Vistoria Técnica</h3>
+                  <p class="text-slate-500 text-xs mt-0.5">Identificação completa da edificação sob vistoria</p>
+                </div>
+                <button onclick="navigate('checklist-lista')" class="text-slate-400 hover:text-slate-700">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              <div class="p-6 space-y-6">
+                <!-- Grid Form -->
+                <div class="grid md:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Nome do Edifício *</label>
+                    <input type="text" id="form-building-name" value="Edifício Jardins do Atlântico" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Endereço do Imóvel *</label>
+                    <input type="text" id="form-address" value="Rua dos Navegantes, 245 — Boa Viagem, Recife/PE" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Área Construída <span class="text-slate-400 font-normal">(opcional)</span></label>
+                    <input type="text" id="form-area" value="3.500 m²" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Idade da Edificação <span class="text-slate-400 font-normal">(opcional)</span></label>
+                    <input type="text" id="form-idade" value="15 anos (2011)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Responsável Legal <span class="text-slate-400 font-normal">(opcional)</span></label>
+                    <input type="text" id="form-legal" value="Maria de Souza" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Tipo de Uso <span class="text-slate-400 font-normal">(opcional)</span></label>
+                    <select id="form-uso" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                      <option selected>Residencial Multifamiliar / Condomínio</option>
+                      <option>Comercial</option>
+                      <option>Misto (Residencial + Comercial)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Limited selection of typologies (Military level legend requirement) -->
+                <div class="border-t border-slate-100 pt-6">
+                  <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-xs font-black uppercase text-slate-700 tracking-wider">Escolha de Tipologias de Sistemas</h4>
+                    <span class="text-[10px] text-slate-400 font-mono">2 de 2 disponíveis para esta simulação</span>
+                  </div>
+
+                  <!-- Alert banner explaining the simulator limitation -->
+                  <div class="bg-amber-50 border border-amber-100 rounded-xl p-3.5 mb-4 text-xs text-amber-800 flex gap-2">
+                    <span class="font-bold">Nota:</span>
+                    <span>Nesta demonstração, apenas duas tipologias estão disponíveis para exploração de modo a garantir o rigor visual e o foco no fluxo de laudo.</span>
+                  </div>
+
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <!-- Option 1: Sapata isolada -->
+                    <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors bg-white shadow-sm">
+                      <input type="checkbox" checked disabled class="mt-1 w-4 h-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500">
+                      <div>
+                        <span class="block text-xs font-extrabold text-teal-600 uppercase tracking-wider">■ Sistemas de Fundações</span>
+                        <span class="block text-sm font-bold text-slate-800 mt-0.5">Sapata isolada</span>
+                        <span class="block text-xs text-slate-500 mt-1">Transmissão de cargas concentradas em pilares isolados.</span>
+                      </div>
+                    </label>
+
+                    <!-- Option 2: Concreto armado in loco -->
+                    <label class="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors bg-white shadow-sm">
+                      <input type="checkbox" checked disabled class="mt-1 w-4 h-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500">
+                      <div>
+                        <span class="block text-xs font-extrabold text-amber-600 uppercase tracking-wider">■ Sistemas Estruturais</span>
+                        <span class="block text-sm font-bold text-slate-800 mt-0.5">Concreto armado in loco</span>
+                        <span class="block text-xs text-slate-500 mt-1">Lajes, vigas e pilares moldados in loco.</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Action button -->
+                <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                  <button onclick="navigate('checklist-lista')" class="px-5 py-2.5 text-slate-700 bg-slate-100 hover:bg-slate-200 font-bold rounded-xl text-sm transition-colors">Voltar</button>
+                  <button onclick="createVistoriaAction()" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-sm transition-all shadow-md transform hover:-translate-y-0.5">Criar Vistoria Técnica</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: CHECKLIST EXECUCAO (MODO 3: Prancheta de Execução com Subviews/Abas) -->
+          <div id="subview-checklist-execucao" class="hidden space-y-6">
+            
+            <!-- Navigation Sub-Tabs -->
+            <div class="border-b border-slate-200 shrink-0 bg-white p-2 rounded-2xl border flex gap-1 overflow-x-auto custom-scroll shadow-sm">
+              <button onclick="switchSubView('execucao')" id="tab-execucao" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white whitespace-nowrap transition-colors">
+                📋 Prancheta de Campo
+              </button>
+              <button onclick="switchSubView('norteadores')" id="tab-norteadores" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">
+                📖 Doc. Norteadores (Anexo I)
+              </button>
+              <button onclick="switchSubView('anamnese')" id="tab-anamnese" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">
+                🗣️ Anamnese Técnica
+              </button>
+              <button onclick="switchSubView('manutencao')" id="tab-manutencao" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">
+                ⚙️ Avaliação de Manutenção
+              </button>
+              <button onclick="switchSubView('criticidade')" id="tab-criticidade" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">
+                ⚖️ Matriz de Criticidade (Seção 12)
+              </button>
+              <button onclick="switchSubView('conclusoes')" id="tab-conclusoes" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">
+                🔍 Conclusões do Laudo
+              </button>
+              <button onclick="switchSubView('anexo4')" id="tab-anexo4" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">
+                📝 Anexo IV (ART/RRT)
+              </button>
+            </div>
+
+            <!-- SUBVIEW: PRANCHETA DE CAMPO -->
+            <div id="wrapper-execucao" class="space-y-6">
+              <!-- Instruction block -->
+              <div class="bg-sky-50 border border-sky-100 rounded-2xl p-4 flex gap-3 items-start">
+                <div class="p-1.5 bg-sky-500/10 text-sky-600 rounded-lg">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.084.67l-.147.07a1.5 1.5 0 01-1.084-.072l-.041-.02m0 0a1.5 1.5 0 011.084-2.12l.147-.03a.75.75 0 111.084.67l-.041.02m-1.084 1.48v3M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-sky-900 uppercase tracking-wider">Orientação da Etapa 4</p>
+                  <p class="text-slate-600 text-xs mt-1">Este é o ambiente de prancheta ativa. Você tem duas patologias para avaliar. Para simular o diagnóstico por foto real, clique em <strong>"+ Registrar Ocorrência"</strong> no primeiro item e use a câmera simulada.</p>
+                </div>
+              </div>
+
+              <!-- General stats panel -->
+              <div class="grid sm:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Edifício sob Vistoria</span>
+                  <div class="mt-2">
+                    <h4 class="font-display font-bold text-slate-800 text-base" id="exec-building-name">Edifício Jardins do Atlântico</h4>
+                    <p class="text-slate-500 text-xs mt-0.5" id="exec-address">Rua dos Navegantes, 245 — Recife/PE</p>
+                  </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Status do Progresso</span>
+                  <div class="mt-2 space-y-1">
+                    <div class="flex justify-between text-xs font-bold">
+                      <span id="exec-progress-text">Inspecionados: 0 de 2</span>
+                      <span id="exec-progress-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div id="exec-progress-bar" class="bg-sky-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Laudo Técnico</span>
+                  <div class="mt-2">
+                    <button id="btn-generate-pdf" onclick="generateLaudoPDF()" disabled class="w-full py-2.5 bg-slate-100 text-slate-400 font-bold rounded-xl text-xs transition-colors cursor-not-allowed">
+                      📝 Emitir Laudo Técnico (PDF)
+                    </button>
+                    <p class="text-[9px] text-slate-400 text-center mt-1">Habilitado apenas após concluir 100% da inspeção</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ITEMS LIST -->
+              <div class="space-y-4">
+                
+                <!-- Item 1: Fundações -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex justify-between items-start">
+                    <div class="space-y-0.5">
+                      <span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px] font-bold uppercase tracking-wider">■ Sistemas de Fundações (Sapata isolada)</span>
+                      <h4 class="font-display font-bold text-slate-800 text-base mt-1">Investigar: Recalque Diferencial</h4>
+                      <p class="text-slate-500 text-xs">Avaliar trincas de 45° ou fissuras inclinadas no respaldo da estrutura.</p>
+                    </div>
+                    <span id="status-badge-item1" class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">PENDENTE</span>
+                  </div>
+
+                  <!-- Details and dynamic occurrences -->
+                  <div id="occ-section-item1" class="hidden bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                    <div class="flex items-start gap-4">
+                      <div class="w-32 h-20 rounded-lg overflow-hidden bg-slate-200 shrink-0 border border-slate-300 shadow-sm">
+                        <img id="occ-photo-item1" src="" class="w-full h-full object-cover">
+                      </div>
+                      <div class="space-y-1">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase font-mono">Ocorrência Capturada #001</span>
+                        <h5 class="text-xs font-bold text-slate-800">Fissuração inclinada na base estrutural</h5>
+                        <p class="text-slate-500 text-[11px] leading-relaxed">Fissura diagonal ativa de 1.8mm. Risco à estabilidade estrutural sob carregamento médio. Nível de prioridade definido como <strong>Prioridade 2 — Médio</strong>.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Action block -->
+                  <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div class="text-[10px] text-slate-400 font-mono">Bypass de câmera real ativado</div>
+                    <button id="btn-occ-item1" onclick="openDamageModal()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                      Registrar Ocorrência
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Item 2: Estruturas -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <div class="flex justify-between items-start">
+                    <div class="space-y-0.5">
+                      <span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-wider">■ Sistemas Estruturais (Concreto armado in loco)</span>
+                      <h4 class="font-display font-bold text-slate-800 text-base mt-1">Investigar: Fissuração Excessiva</h4>
+                      <p class="text-slate-500 text-xs">Avaliar flechas excessivas em lajes ou trincas perpendiculares nas vigas de concreto.</p>
+                    </div>
+                    <span id="status-badge-item2" class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">PENDENTE</span>
+                  </div>
+
+                  <!-- Action block -->
+                  <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <button id="btn-pass-item2" onclick="setitem2Status('CONFORME')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm">
+                        ✓ Conforme / Regular
+                      </button>
+                      <button id="btn-na-item2" onclick="setitem2Status('N/A')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">
+                        N/A (Não se aplica)
+                      </button>
+                    </div>
+
+                    <!-- Disabled registrar button with tooltip warning -->
+                    <div class="relative group">
+                      <button disabled class="px-4 py-2 bg-slate-100 text-slate-400 font-bold rounded-xl text-xs cursor-not-allowed">
+                        + Registrar Ocorrência
+                      </button>
+                      <div class="absolute right-0 bottom-full mb-2 hidden group-hover:block bg-slate-800 text-white text-[10px] p-2 rounded-lg w-52 leading-normal shadow-xl z-10 border border-slate-700">
+                        Nesta demonstração, apenas o primeiro item tem evidência fotográfica disponível para registro completo de dano.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- SUBVIEW: DOC. NORTEADORES -->
+            <div id="wrapper-norteadores" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h4 class="font-display font-bold text-slate-900 text-base">Documentos Norteadores (Anexo I)</h4>
+                <p class="text-slate-500 text-xs">Controle de documentação predial consultada para emissão técnica</p>
+              </div>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <span class="text-xs font-bold">Convenção de Condomínio</span>
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded">CONSULTADO</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <span class="text-xs font-bold">Projeto Arquitetônico Original</span>
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded">CONSULTADO</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <span class="text-xs font-bold">Histórico de Manutenções Periódicas</span>
+                  <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded">PARCIALMENTE CONSULTADO</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBVIEW: ANAMNESE -->
+            <div id="wrapper-anamnese" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h4 class="font-display font-bold text-slate-900 text-base">Anamnese Técnica</h4>
+                <p class="text-slate-500 text-xs">Entrevistas e depoimentos técnicos de moradores ou zeladores</p>
+              </div>
+              <div class="space-y-4">
+                <div class="p-4 bg-slate-50 rounded-xl space-y-1">
+                  <p class="text-[10px] font-bold text-slate-400 font-mono">Entrevistado: Zelador Carlos Pereira</p>
+                  <p class="text-xs text-slate-800 font-bold">"As fissuras na garagem começaram há cerca de 6 meses após o término das chuvas fortes."</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-xl space-y-1">
+                  <p class="text-[10px] font-bold text-slate-400 font-mono">Entrevistado: Síndica Maria de Souza</p>
+                  <p class="text-xs text-slate-800 font-bold">"A impermeabilização da caixa d'água nunca foi refeita desde a entrega original."</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBVIEW: MANUTENÇÃO -->
+            <div id="wrapper-manutencao" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h4 class="font-display font-bold text-slate-900 text-base">Avaliação do Estado de Manutenção</h4>
+                <p class="text-slate-500 text-xs">Adequação técnica conforme NBR 5674</p>
+              </div>
+              <div class="space-y-4">
+                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <div>
+                    <span class="text-xs font-bold text-slate-800 block">Sistemas de Fundações</span>
+                    <span class="text-[10px] text-slate-500 block">Manutenção preventiva inexistente para fundações diretas</span>
+                  </div>
+                  <span class="px-2 py-1 rounded bg-rose-100 text-rose-800 font-bold text-[10px]">CRÍTICO</span>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <div>
+                    <span class="text-xs font-bold text-slate-800 block">Instalações Elétricas</span>
+                    <span class="text-[10px] text-slate-500 block">Substituição recente de quadros de distribuição</span>
+                  </div>
+                  <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">ADEQUADO</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBVIEW: CRITICIDADE -->
+            <div id="wrapper-criticidade" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h4 class="font-display font-bold text-slate-900 text-base">Matriz de Criticidade (Seção 12)</h4>
+                <p class="text-slate-500 text-xs">Avaliação de gravidade, urgência e tendência de patologias encontradas</p>
+              </div>
+              <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                    <th class="p-2.5">Ficha de Dano</th>
+                    <th class="p-2.5">Localização</th>
+                    <th class="p-2.5">Anomalia</th>
+                    <th class="p-2.5 text-center">Criticidade</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr>
+                    <td class="p-2.5 font-bold">Ficha nº 001</td>
+                    <td class="p-2.5">Subsolo / Pilar P2</td>
+                    <td class="p-2.5">Recalque Diferencial</td>
+                    <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">Prioridade 2 — Médio</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- SUBVIEW: CONCLUSOES -->
+            <div id="wrapper-conclusoes" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h4 class="font-display font-bold text-slate-900 text-base">Conclusões e Recomendações</h4>
+                <p class="text-slate-500 text-xs">Orientações e planos de intervenção para os danos mapeados</p>
+              </div>
+              <div class="prose max-w-none text-xs leading-relaxed text-slate-600 space-y-3">
+                <p>Após avaliação da edificação <strong>Edifício Jardins do Atlântico</strong>, constatamos um quadro isolado de movimentação na sapata isolada (Recalque Diferencial).</p>
+                <p class="font-bold text-slate-800">Principais Ações Determinadas:</p>
+                <ul class="list-disc pl-4 space-y-1">
+                  <li>Realizar sondagem rotativa complementar no solo de apoio.</li>
+                  <li>Monitorar a abertura das fissuras diagonais por meio de gesso ou réguas mecânicas a cada 15 dias.</li>
+                  <li>Revisar a integridade das instalações de água que contornam a fundação do subsolo.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- SUBVIEW: ANEXO 4 -->
+            <div id="wrapper-anexo4" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h4 class="font-display font-bold text-slate-900 text-base">Anexo IV: Anotação/Registro de Responsabilidade Técnica (ART/RRT)</h4>
+                <p class="text-slate-500 text-xs">Dados e número de controle profissional</p>
+              </div>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="block text-xs font-bold uppercase text-slate-500">Número da ART / RRT</label>
+                  <input type="text" id="form-art-number" value="PE202613593A1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-sky-500 outline-none font-mono">
+                </div>
+                <div class="space-y-1">
+                  <label class="block text-xs font-bold uppercase text-slate-500">Conselho de Fiscalização Profissional</label>
+                  <input type="text" disabled value="CAU / PE (Conselho de Arquitetura e Urbanismo)" class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs outline-none">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- VIEW: PDF (Visualização final navy/copper do Laudo) -->
+          <div id="subview-pdf" class="hidden space-y-6">
+            
+            <!-- Instruction block -->
+            <div class="bg-sky-50 border border-sky-100 rounded-2xl p-4 flex gap-3 items-start">
+              <div class="p-1.5 bg-sky-500/10 text-sky-600 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.084.67l-.147.07a1.5 1.5 0 01-1.084-.072l-.041-.02m0 0a1.5 1.5 0 011.084-2.12l.147-.03a.75.75 0 111.084.67l-.041.02m-1.084 1.48v3M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-sky-900 uppercase tracking-wider">Orientação da Etapa 5 (Laudo Final)</p>
+                <p class="text-slate-600 text-xs mt-1">Este é o laudo final gerado automaticamente a partir da vistoria que você acabou de criar. Role a tela para examinar o sumário e o anexo fotográfico contendo a imagem real da fissura.</p>
+              </div>
+            </div>
+
+            <!-- PDF Controls -->
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
+              <button onclick="switchSubView('execucao')" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                Voltar para Prancheta
+              </button>
+              <div class="flex items-center gap-2">
+                <button onclick="printMock()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors">
+                  🖨️ Imprimir / Exportar
+                </button>
+              </div>
+            </div>
+
+            <!-- PDF LAYOUT SHEET (NAVY & COPPER DESIGN) -->
+            <div class="max-w-3xl mx-auto space-y-6">
+              
+              <!-- COVER PAGE -->
+              <div class="bg-white border border-slate-200 rounded-xl p-10 shadow-lg aspect-[1/1.3] flex flex-col justify-between" style="border-top: 10px solid #1e293b;">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p class="font-display font-bold text-slate-800 text-sm">AmorimTech</p>
+                    <p class="text-[9px] text-slate-400 uppercase tracking-widest font-mono">Plano Interativo de Manutenção Predial</p>
+                  </div>
+                  <span class="bg-teal-50 border border-teal-100 text-teal-700 px-3 py-1 rounded font-bold text-[9px] uppercase tracking-wider">LTIP AUTORIZADO</span>
+                </div>
+
+                <div class="space-y-4">
+                  <span class="text-xs font-black uppercase text-amber-600 tracking-widest block font-mono">Laudo de Inspeção Predial</span>
+                  <h1 class="text-4xl font-display font-bold text-slate-900 border-l-4 border-amber-600 pl-4 leading-tight">Laudo Técnico de Inspeção Predial (LTIP)</h1>
+                  <div class="space-y-1 pt-2">
+                    <h2 class="text-lg font-bold text-slate-800" id="pdf-building-name">Edifício Jardins do Atlântico</h2>
+                    <p class="text-xs text-slate-500" id="pdf-address">Rua dos Navegantes, 245 — Boa Viagem, Recife/PE</p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 pt-6 border-t border-slate-200">
+                  <div>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block font-mono">Responsável Técnico</span>
+                    <span class="text-sm font-bold text-slate-800 block mt-0.5">Emanoel Silva de Amorim</span>
+                    <span class="text-xs text-slate-500 block">Arquiteto e Urbanista — CAU A133593-6</span>
+                    <span class="text-xs text-slate-500 block">Empresa: AmorimTech</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block font-mono">Data de Emissão</span>
+                    <span class="text-sm font-bold text-slate-800 block mt-0.5" id="pdf-date-str">05 de Julho de 2026</span>
+                    <span class="text-xs text-slate-500 block">Registro: PE202613593A1</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SUMARIO (14 Real Sections) -->
+              <div class="bg-white border border-slate-200 rounded-xl p-10 shadow-lg">
+                <div class="border-b-2 border-slate-800 pb-3 mb-6">
+                  <h3 class="font-display font-bold text-slate-900 text-lg uppercase tracking-wide">Sumário Geral</h3>
+                </div>
+                <div class="space-y-2.5 text-xs text-slate-700">
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">1.0</strong> Apresentação</span><span>Fág. 03</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">2.0</strong> Qualificação do Responsável Técnico</span><span>Fág. 04</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">3.0</strong> Glossário Técnico</span><span>Fág. 05</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">4.0</strong> Normas Técnicas Aplicadas</span><span>Fág. 06</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">5.0</strong> Ressalvas e Limites Técnicos</span><span>Fág. 07</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">6.0</strong> Metodologia da Inspeção</span><span>Fág. 08</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">7.0</strong> Caracterização Básica do Objeto</span><span>Fág. 09</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">8.0</strong> Análise Geral de Riscos</span><span>Fág. 11</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900"><span class="text-sky-600">9.0</span></strong> Vistoria de Campo & Conformidade</span><span>Fág. 12</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">10.0</strong> Diagnóstico Técnico do Imóvel</span><span>Fág. 14</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">11.0</strong> Avaliação do Estado de Manutenção</span><span>Fág. 15</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">12.0</strong> Matriz de Criticidade Técnica</span><span>Fág. 16</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">13.0</strong> Conclusões Finais e Parecer</span><span>Fág. 17</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">14.0</strong> Lista de Anexos Técnicos</span><span>Fág. 18</span></div>
+                  <div class="flex justify-between border-b border-dotted border-slate-200 pb-1"><span><strong class="text-slate-900">15.0</strong> Encerramento e Assinaturas</span><span>Fág. 19</span></div>
+                  <div class="flex justify-between pt-1 border-t border-slate-200 font-bold text-slate-900 mt-2">
+                    <span>ANEXO III — MAPEAMENTO DE DANOS E IMAGENS</span>
+                    <span>Anexo</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SEÇÃO 9.0 (Tabela de Conformidade Técnica) -->
+              <div class="bg-white border border-slate-200 rounded-xl p-10 shadow-lg">
+                <div class="border-b-2 border-slate-800 pb-3 mb-6">
+                  <h3 class="font-display font-bold text-slate-900 text-lg uppercase tracking-wide">9.0 Vistoria de Campo & Conformidade</h3>
+                </div>
+                <table class="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr class="bg-slate-900 text-white font-bold border-b border-slate-300">
+                      <th class="p-3">Sistema / Tipologia</th>
+                      <th class="p-3">Item de Investigação</th>
+                      <th class="p-3 text-center">Conformidade Final</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200">
+                    <tr>
+                      <td class="p-3">
+                        <strong class="text-slate-900 block">Sapata isolada</strong>
+                        <span class="text-slate-500 text-[10px] block">Sistemas de Fundações</span>
+                      </td>
+                      <td class="p-3">Investigar: Recalque Diferencial</td>
+                      <td class="p-3 text-center">
+                        <span class="px-2 py-1 rounded bg-rose-50 border border-rose-200 text-rose-800 font-bold text-[10px] uppercase block w-max mx-auto">Não Conforme (P2)</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="p-3">
+                        <strong class="text-slate-900 block">Concreto armado in loco</strong>
+                        <span class="text-slate-500 text-[10px] block">Sistemas Estruturais</span>
+                      </td>
+                      <td class="p-3">Investigar: Fissuração Excessiva</td>
+                      <td class="p-3 text-center">
+                        <span id="pdf-conformidade-item2" class="px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-600 font-bold text-[10px] uppercase block w-max mx-auto">PENDENTE</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- ANEXO III (Relatório Fotográfico & Ficha de Dano) -->
+              <div class="bg-white border border-slate-200 rounded-xl p-10 shadow-lg">
+                <div class="border-b-2 border-slate-800 pb-3 mb-6">
+                  <h3 class="font-display font-bold text-slate-900 text-lg uppercase tracking-wide">Anexo III — Mapeamento de Danos</h3>
+                </div>
+                
+                <!-- Damage Card Replica (Navy/Copper styling) -->
+                <div class="border border-slate-300 rounded-xl overflow-hidden shadow-sm" style="border-left: 8px solid #b45309;">
+                  <!-- Card Header -->
+                  <div class="bg-slate-900 text-white p-3 flex justify-between items-center text-xs">
+                    <span class="font-bold tracking-wider font-mono">FICHA DE DANO Nº 001</span>
+                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-black font-mono">Prioridade 2 — Médio</span>
+                  </div>
+                  <!-- Card Content -->
+                  <div class="p-4 space-y-3">
+                    <div class="grid sm:grid-cols-2 gap-4">
+                      <div class="space-y-1 text-xs">
+                        <p class="text-slate-400 font-mono text-[9px]">SISTEMA TÉCNICO</p>
+                        <p class="font-bold text-slate-800">Sistemas de Fundações</p>
+                      </div>
+                      <div class="space-y-1 text-xs">
+                        <p class="text-slate-400 font-mono text-[9px]">TECNOLOGIA / TIPOLOGIA</p>
+                        <p class="font-bold text-slate-800">Sapata isolada</p>
+                      </div>
+                    </div>
+                    <div class="space-y-1 text-xs">
+                      <p class="text-slate-400 font-mono text-[9px]">ANOMALIA / PATOLOGIA DETECTADA</p>
+                      <p class="font-bold text-sky-950 text-sm">Fissura diagonal ativa decorrente de recalque diferencial</p>
+                    </div>
+                    <div class="space-y-1 text-xs leading-relaxed text-slate-600">
+                      <p class="text-slate-400 font-mono text-[9px] uppercase">Sintomas & Recomendações</p>
+                      <p>Fissura inclinada na alvenaria próxima à base do pilar, com abertura de 1.8mm. Indica recalque pontual da fundação direta.</p>
+                      <p class="mt-1 font-semibold text-slate-800">Recomendação:</p>
+                      <p>Sondagem complementar direta no subsolo, instalação de marcadores de fissuração e monitoramento geotécnico.</p>
+                    </div>
+                  </div>
+                  <!-- Card Photo Section (Dynamic photo output) -->
+                  <div class="bg-slate-50 p-4 border-t border-slate-200">
+                    <p class="text-slate-400 font-mono text-[9px] uppercase mb-2">Evidência Fotográfica de Campo</p>
+                    <div class="w-full h-56 bg-slate-200 rounded-lg overflow-hidden border border-slate-300">
+                      <img id="pdf-photo-real-img" src="" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-[9px] text-slate-400 mt-1 font-mono text-center">Filtro de Análise de IA Aplicado • Mapeamento Cadastral Ativo</p>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- TOAST ALERTS SYSTEM -->
+  <div id="toast-root" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- MODAL: FICHA DE DANO -->
+  <div id="modal-ficha-dano" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+        <div>
+          <h4 class="font-display font-bold text-slate-900 text-sm uppercase tracking-wide">Ficha de Dano Mapeada</h4>
+          <p class="text-[10px] text-slate-400 font-mono mt-0.5">Sistemas de Fundações — Sapata isolada</p>
+        </div>
+        <button onclick="closeDamageModal()" class="text-slate-400 hover:text-slate-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        <!-- Instruction block -->
+        <div class="bg-sky-50 border border-sky-100 rounded-xl p-3 flex gap-2">
+          <svg class="w-4 h-4 text-sky-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.084.67l-.147.07a1.5 1.5 0 01-1.084-.072l-.041-.02m0 0a1.5 1.5 0 011.084-2.12l.147-.03a.75.75 0 111.084.67l-.041.02m-1.084 1.48v3M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+          <p class="text-slate-600 text-[11px]">Preencha os dados e clique em <strong>"Tirar Foto"</strong> para simular a captura e análise automatizada da anomalia.</p>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block font-bold text-slate-600">Descrição da Anomalia</label>
+          <input type="text" id="occ-desc" value="Fissura inclinada na alvenaria próxima ao pilar estrutural P2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="block font-bold text-slate-600">Gravidade</label>
+            <select id="occ-gravidade" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+              <option>Crítica (P1)</option>
+              <option selected>Regular / Média (P2)</option>
+              <option>Mínima (P3)</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block font-bold text-slate-600">Causa Provável</label>
+            <input type="text" id="occ-causa" value="Recalque Diferencial" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block font-bold text-slate-600">Recomendação Técnica</label>
+          <textarea id="occ-rec" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none">Monitoramento geotécnico e sondagem geofísica complementar.</textarea>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+        <button onclick="closeDamageModal()" class="px-4 py-2 text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-xs font-bold">Cancelar</button>
+        <button onclick="openCameraModal()" class="px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold transition-colors flex items-center gap-1">
+          📸 Tirar Foto & Analisar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CAMERA (Bypass) -->
+  <div id="modal-camera" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-4 bg-slate-900 text-white flex justify-between items-center text-xs font-bold">
+        <span>CÂMERA DE EVIDÊNCIA SIMULADA</span>
+        <button onclick="closeCameraModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Preview container with real fissure photo overlay -->
+      <div class="relative bg-slate-950 aspect-[4/3] flex flex-col justify-center items-center text-center p-4">
+        
+        <!-- Loading state overlay -->
+        <div id="camera-loading" class="hidden absolute inset-0 bg-slate-950/90 z-20 flex flex-col items-center justify-center space-y-3">
+          <div class="w-8 h-8 rounded-full border-4 border-slate-700 border-t-sky-500 animate-spin"></div>
+          <span class="text-xs text-sky-400 font-bold uppercase tracking-widest font-mono">Processando com IA...</span>
+        </div>
+
+        <svg class="w-12 h-12 text-slate-700 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/></svg>
+        <p class="text-slate-300 text-xs font-bold">Modo de Captura Automatizada de Campo</p>
+        <p class="text-[10px] text-slate-500 mt-1 max-w-xs leading-normal">O simulador irá carregar a evidência fotográfica real de fissura recomendada para fins pedagógicos.</p>
+      </div>
+
+      <div class="p-4 bg-slate-50 flex justify-between items-center">
+        <button onclick="closeCameraModal()" class="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold">Voltar</button>
+        <button onclick="captureAction()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+          📸 Disparar & Analisar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PROFILE (Apenas leitura como pedido) -->
+  <div id="modal-profile" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
+        <h4 class="font-display font-bold text-sm">Perfil do Responsável Técnico</h4>
+        <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-6 space-y-4 text-xs">
+        <div class="flex flex-col items-center text-center pb-4 border-b border-slate-100">
+          <div class="w-16 h-16 rounded-full bg-slate-800 text-white text-2xl font-bold flex items-center justify-center mb-2">EA</div>
+          <h5 class="text-sm font-bold text-slate-900">Emanoel Silva de Amorim</h5>
+          <span class="text-[10px] text-amber-600 font-bold uppercase tracking-wider font-mono">Arquiteto e Urbanista</span>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between border-b border-slate-50 pb-1">
+            <span class="text-slate-400 font-bold">Conselho Profissional</span>
+            <span class="font-semibold text-slate-800">CAU PE</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-50 pb-1">
+            <span class="text-slate-400 font-bold">Registro Profissional</span>
+            <span class="font-semibold text-slate-800 font-mono">A133593-6</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-50 pb-1">
+            <span class="text-slate-400 font-bold">Empresa</span>
+            <span class="font-semibold text-slate-800">AmorimTech</span>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-normal text-center mt-4">Perfil pré-cadastrado de acordo com as especificações institucionais de laudo técnico do ecossistema.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOUR POPUP (Replica do Tour real de 4 Passos) -->
+  <div id="tour-card" class="hidden fixed bottom-6 left-6 max-w-sm w-full bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden z-50">
+    <div class="bg-gradient-to-r from-slate-900 to-sky-950 text-white p-4 relative">
+      <span class="bg-sky-500 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max">Tour do Ecossistema</span>
+      <h4 class="text-sm font-black mt-1.5" id="tour-title">Passo 1 de 4: Visão Geral</h4>
+      <button onclick="closeTour()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-4 text-xs leading-relaxed text-slate-600" id="tour-body">
+      Bem-vindo ao Predial 4.0! Esta é a página inicial da AmorimTech. Aqui você tem uma visão geral, pode ler dados e ver as estatísticas.
+    </div>
+    <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+      <button id="tour-btn-prev" onclick="prevTour()" class="px-3 py-1.5 border border-slate-200 text-slate-700 font-bold rounded-lg text-xs hover:bg-white disabled:opacity-40">Anterior</button>
+      <button id="tour-btn-next" onclick="nextTour()" class="px-4 py-1.5 bg-sky-600 text-white font-bold rounded-lg text-xs hover:bg-sky-700">Próximo</button>
+    </div>
+  </div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    // Constants & Base64 Photos
+    const DEMO_FOTO_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCAQAAuoDASIAAhEBAxEB/8QAHAAAAwADAQEBAAAAAAAAAAAAAAECAwQFBgcI/8QASBAAAgEDAwMCAgcEBwgBAwQDAAECAwQRBRIhBjFBE1EiYQcUMnGBkZIVI0JSFjNDU3KCoSQ0RFRsfH1hY29oZDBwY29oZ';
+
+    // State Variables
+    let currentView = 'login';
+    let currentSubView = 'execucao';
+    let activeTourStep = 0;
+    let loginState = null;
+
+    // Form inputs state
+    let formBuildingName = 'Edifício Jardins do Atlântico';
+    let formAddress = 'Rua dos Navegantes, 245 — Boa Viagem, Recife/PE';
+
+    // Checklist states
+    let item1Status = 'PENDENTE'; // Sapata isolada
+    let item2Status = 'PENDENTE'; // Concreto armado in loco
+
+    // UI Initializer
+    window.onload = function() {
+      showToast('Simulador inicializado com sucesso!', 'success');
+    };
+
+    // Helper functions
+    function showToast(msg, type = 'info') {
+      const root = document.getElementById('toast-root');
+      const toast = document.createElement('div');
+      let iconColor = 'text-sky-500 bg-sky-50';
+      if (type === 'success') iconColor = 'text-emerald-500 bg-emerald-50';
+      if (type === 'error') iconColor = 'text-rose-500 bg-rose-50';
+
+      toast.className = `p-3 rounded-xl bg-white border border-slate-200 shadow-xl flex items-center gap-2.5 max-w-xs transition-all pointer-events-auto text-xs animate-fade-in`;
+      toast.innerHTML = `
+        <div class="p-1 rounded-lg ${iconColor} shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.084.67l-.147.07a1.5 1.5 0 01-1.084-.072l-.041-.02m0 0a1.5 1.5 0 011.084-2.12l.147-.03a.75.75 0 111.084.67l-.041.02m-1.084 1.48v3M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+        </div>
+        <p class="font-semibold text-slate-800 leading-normal">${msg}</p>
+      `;
+      root.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Login handlers
+    function handleLogin(event) {
+      event.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const pass = document.getElementById('login-password').value.trim();
+      
+      if (email === 'emanoel.s.amorim@gmail.com' && pass === 'Amorim$123*') {
+        loginState = 'logged';
+        enterPlatform();
+        showToast('Login efetuado com sucesso como RT.', 'success');
+      } else {
+        showToast('Credenciais incorretas! Simulando login simplificado...', 'error');
+        loginState = 'logged';
+        enterPlatform();
+      }
+    }
+
+    function bypassLogin() {
+      loginState = 'guest';
+      enterPlatform();
+      showToast('Acesso como visitante ativado!', 'info');
+    }
+
+    function enterPlatform() {
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-shell').classList.remove('hidden');
+      navigate('visao-geral');
+    }
+
+    function logout() {
+      loginState = null;
+      activeTourStep = 0;
+      item1Status = 'PENDENTE';
+      item2Status = 'PENDENTE';
+      document.getElementById('view-shell').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('hidden');
+      document.getElementById('tour-card').classList.add('hidden');
+      showToast('Você saiu do simulador.', 'info');
+    }
+
+    // Navigation core
+    function navigate(view) {
+      currentView = view;
+      
+      // Hide all subviews
+      document.getElementById('subview-visao-geral').classList.add('hidden');
+      document.getElementById('subview-checklist-lista').classList.add('hidden');
+      document.getElementById('subview-checklist-criacao').classList.add('hidden');
+      document.getElementById('subview-checklist-execucao').classList.add('hidden');
+      document.getElementById('subview-pdf').classList.add('hidden');
+
+      // Unset active sidebar nav classes
+      document.getElementById('btn-nav-visao-geral').className = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-colors text-slate-400 hover:bg-slate-800 hover:text-white";
+      document.getElementById('btn-nav-checklist').className = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-colors text-slate-400 hover:bg-slate-800 hover:text-white";
+
+      if (view === 'visao-geral') {
+        document.getElementById('subview-visao-geral').classList.remove('hidden');
+        document.getElementById('shell-title').innerText = 'Visão Geral';
+        document.getElementById('btn-nav-visao-geral').className = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-colors text-white bg-slate-800";
+      } else if (view === 'checklist-lista') {
+        document.getElementById('subview-checklist-lista').classList.remove('hidden');
+        document.getElementById('shell-title').innerText = 'Plano de Vistorias';
+        document.getElementById('btn-nav-checklist').className = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-colors text-white bg-slate-800";
+      } else if (view === 'checklist-criacao') {
+        document.getElementById('subview-checklist-criacao').classList.remove('hidden');
+        document.getElementById('shell-title').innerText = 'Criação de Vistoria';
+      } else if (view === 'checklist-execucao') {
+        document.getElementById('subview-checklist-execucao').classList.remove('hidden');
+        document.getElementById('shell-title').innerText = 'Prancheta de Inspeção Ativa';
+        switchSubView(currentSubView);
+      } else if (view === 'pdf') {
+        document.getElementById('subview-pdf').classList.remove('hidden');
+        document.getElementById('shell-title').innerText = 'Laudo Técnico de Inspeção Predial';
+      }
+    }
+
+    // Subview Tabs navigation inside Execution view
+    function switchSubView(sub) {
+      currentSubView = sub;
+
+      // Hide all subview tabs
+      document.getElementById('wrapper-execucao').classList.add('hidden');
+      document.getElementById('wrapper-norteadores').classList.add('hidden');
+      document.getElementById('wrapper-anamnese').classList.add('hidden');
+      document.getElementById('wrapper-manutencao').classList.add('hidden');
+      document.getElementById('wrapper-criticidade').classList.add('hidden');
+      document.getElementById('wrapper-conclusoes').classList.add('hidden');
+      document.getElementById('wrapper-anexo4').classList.add('hidden');
+
+      // Unset tab active classes
+      ['tab-execucao', 'tab-norteadores', 'tab-anamnese', 'tab-manutencao', 'tab-criticidade', 'tab-conclusoes', 'tab-anexo4'].forEach(id => {
+        document.getElementById(id).className = "px-4 py-2 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors";
+      });
+
+      // Show targeted tab
+      document.getElementById(`wrapper-${sub}`).classList.remove('hidden');
+      document.getElementById(`tab-${sub}`).className = "px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white whitespace-nowrap transition-colors";
+    }
+
+    // Creation View Triggers
+    function openChecklistCreation() {
+      navigate('checklist-criacao');
+    }
+
+    function createVistoriaAction() {
+      formBuildingName = document.getElementById('form-building-name').value.trim();
+      formAddress = document.getElementById('form-address').value.trim();
+
+      if (!formBuildingName || !formAddress) {
+        showToast('Nome do Edifício e Endereço são obrigatórios.', 'error');
+        return;
+      }
+
+      // Update name text on Exec and PDF screens dynamically
+      document.getElementById('exec-building-name').innerText = formBuildingName;
+      document.getElementById('exec-address').innerText = formAddress;
+      document.getElementById('pdf-building-name').innerText = formBuildingName;
+      document.getElementById('pdf-address').innerText = formAddress;
+
+      showToast('Vistoria configurada e criada com sucesso.', 'success');
+      navigate('checklist-execucao');
+      updateProgress();
+    }
+
+    function startSimulationWithDefaults() {
+      formBuildingName = 'Edifício Jardins do Atlântico';
+      formAddress = 'Rua dos Navegantes, 245 — Boa Viagem, Recife/PE';
+      document.getElementById('exec-building-name').innerText = formBuildingName;
+      document.getElementById('exec-address').innerText = formAddress;
+      document.getElementById('pdf-building-name').innerText = formBuildingName;
+      document.getElementById('pdf-address').innerText = formAddress;
+      
+      navigate('checklist-execucao');
+      updateProgress();
+    }
+
+    // Progress updates
+    function updateProgress() {
+      let inspectedCount = 0;
+      let passCount = 0;
+      let failCount = 0;
+
+      if (item1Status !== 'PENDENTE') {
+        inspectedCount++;
+        if (item1Status === 'NAO_CONFORME') failCount++;
+      }
+      if (item2Status !== 'PENDENTE') {
+        inspectedCount++;
+        if (item2Status === 'CONFORME') passCount++;
+      }
+
+      const percent = Math.round((inspectedCount / 2) * 100);
+      
+      document.getElementById('exec-progress-text').innerText = `Inspecionados: ${inspectedCount} de 2`;
+      document.getElementById('exec-progress-percentage').innerText = `${percent}%`;
+      document.getElementById('exec-progress-bar').style.width = `${percent}%`;
+
+      // Enable/Disable PDF emission
+      const btnPdf = document.getElementById('btn-generate-pdf');
+      if (percent === 100) {
+        btnPdf.disabled = false;
+        btnPdf.className = "w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm cursor-pointer";
+      } else {
+        btnPdf.disabled = true;
+        btnPdf.className = "w-full py-2.5 bg-slate-100 text-slate-400 font-bold rounded-xl text-xs transition-colors cursor-not-allowed";
+      }
+    }
+
+    // Item state modifiers
+    function setitem2Status(status) {
+      item2Status = status;
+      document.getElementById('status-badge-item2').innerText = status;
+      document.getElementById('status-badge-item2').className = `px-2.5 py-1 rounded-full font-bold text-xs ${status === 'CONFORME' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`;
+      
+      // Update PDF state
+      document.getElementById('pdf-conformidade-item2').innerText = status === 'CONFORME' ? 'CONFORME' : 'NÃO SE APLICA';
+      document.getElementById('pdf-conformidade-item2').className = `px-2 py-1 rounded border font-bold text-[10px] uppercase block w-max mx-auto ${status === 'CONFORME' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`;
+
+      showToast(`Item de Estruturas marcado como: ${status}`, 'info');
+      updateProgress();
+    }
+
+    // Modals controllers
+    function openDamageModal() {
+      document.getElementById('modal-ficha-dano').classList.remove('hidden');
+    }
+    function closeDamageModal() {
+      document.getElementById('modal-ficha-dano').classList.add('hidden');
+    }
+
+    function openCameraModal() {
+      closeDamageModal();
+      document.getElementById('modal-camera').classList.remove('hidden');
+    }
+    function closeCameraModal() {
+      document.getElementById('modal-camera').classList.add('hidden');
+    }
+
+    function captureAction() {
+      document.getElementById('camera-loading').classList.remove('hidden');
+      setTimeout(() => {
+        // Mock capture complete
+        document.getElementById('camera-loading').classList.add('hidden');
+        closeCameraModal();
+
+        // Apply real image to item and PDF
+        item1Status = 'NAO_CONFORME';
+        document.getElementById('status-badge-item1').innerText = 'FALHA (P2)';
+        document.getElementById('status-badge-item1').className = "px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-xs";
+        
+        // Show occurrence card under Item 1
+        document.getElementById('occ-section-item1').classList.remove('hidden');
+        document.getElementById('occ-photo-item1').src = DEMO_FOTO_BASE64;
+        document.getElementById('pdf-photo-real-img').src = DEMO_FOTO_BASE64;
+
+        showToast('Foto processada e diagnóstico estrutural sugerido pela IA com sucesso!', 'success');
+        updateProgress();
+      }, 1400);
+    }
+
+    function openProfileModal() {
+      document.getElementById('modal-profile').classList.remove('hidden');
+    }
+    function closeProfileModal() {
+      document.getElementById('modal-profile').classList.add('hidden');
+    }
+
+    function generateLaudoPDF() {
+      navigate('pdf');
+    }
+
+    function printMock() {
+      showToast('Simulando exportação: em ambiente de produção, este botão gera a conversão para impressão (Ctrl+P / Chrome Print).', 'success');
+    }
+
+    function toggleNotifications() {
+      const dd = document.getElementById('notif-dropdown');
+      dd.classList.toggle('hidden');
+    }
+
+    // Tour parameters
+    const tourSteps = [
+      {
+        title: "Passo 1 de 4: Visão Geral",
+        body: "Bem-vindo ao Predial 4.0! Esta é a página inicial da AmorimTech. Aqui você tem uma visão geral, pode assinar planos de teste, baixar eBooks de engenharia diagnóstica e visualizar o gráfico comparativo de estratégias de manutenção."
+      },
+      {
+        title: "Passo 2 de 4: Sistemas de Campo",
+        body: "Explore os sistemas do edifício na barra lateral: Estrutura & Envoltória, Instalações, Segurança & Transporte e Áreas Externas. Cada módulo traz tipologias técnicas e catálogo completo de patologias comuns."
+      },
+      {
+        title: "Passo 3 de 4: Check-up",
+        body: "Abra o Check-up para iniciar uma inspeção predial no edifício em tempo real. Registre conformidades, fotografias com GPS e anotações técnicas — salvas localmente para uso sem internet."
+      },
+      {
+        title: "Passo 4 de 4: Assistentes com IA",
+        body: "No canto inferior direito, você tem acesso às nossas Ferramentas de IA Ativas: Diagnóstico de patologias por fotos de campo (IA), Assistente de vistorias por chat, Diagnóstico Técnico guiado e o Cronograma Preventivo anual!"
+      }
+    ];
+
+    function startTour() {
+      activeTourStep = 1;
+      updateTourCard();
+    }
+
+    function closeTour() {
+      activeTourStep = 0;
+      document.getElementById('tour-card').classList.add('hidden');
+    }
+
+    function nextTour() {
+      if (activeTourStep < 4) {
+        activeTourStep++;
+        updateTourCard();
+      } else {
+        closeTour();
+        showToast('Tour concluído!', 'success');
+      }
+    }
+
+    function prevTour() {
+      if (activeTourStep > 1) {
+        activeTourStep--;
+        updateTourCard();
+      }
+    }
+
+    function updateTourCard() {
+      const card = document.getElementById('tour-card');
+      card.classList.remove('hidden');
+
+      const data = tourSteps[activeTourStep - 1];
+      document.getElementById('tour-title').innerText = data.title;
+      document.getElementById('tour-body').innerText = data.body;
+
+      document.getElementById('tour-btn-prev').disabled = (activeTourStep === 1);
+      document.getElementById('tour-btn-next').innerText = (activeTourStep === 4) ? "Concluir" : "Próximo";
+    }
+
+  </script>
+</body>
+</html>

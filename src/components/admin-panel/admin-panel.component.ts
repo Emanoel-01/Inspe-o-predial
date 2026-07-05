@@ -39,6 +39,7 @@ export class AdminPanelComponent {
     { id: 'notificacoes', label: 'Central de Notificações', icon: '🔔' },
     { id: 'convites', label: 'Convites e Acessos', icon: '🎫' },
     { id: 'configuracoes', label: 'Configurações', icon: '⚙️' },
+    { id: 'simulador', label: 'Simulador de Demonstração', icon: '🖥️' },
   ];
 
   activeTab = signal('atividade');

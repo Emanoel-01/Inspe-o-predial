@@ -592,6 +592,32 @@
           </div>
         }
 
+        @if (activeTab() === 'simulador') {
+          <div class="space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
+              <div>
+                <h3 class="text-lg sm:text-xl font-bold text-slate-800">Simulador de Demonstração</h3>
+                <p class="text-slate-500 text-xs sm:text-sm mt-0.5">
+                  Réplica visual estática do app, para fins de marketing/demonstração. Arquivo isolado — não afeta o app real.
+                </p>
+              </div>
+              <a href="/simulador.html" target="_blank" rel="noopener"
+                 class="flex-shrink-0 flex items-center gap-2 bg-sky-700 hover:bg-sky-800 text-white font-bold px-4 py-2 rounded-lg text-xs transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                <span>Abrir em nova aba</span>
+              </a>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <iframe
+                src="/simulador.html"
+                class="w-full h-[75vh] border-0"
+                title="Simulador de Demonstração Predial 4.0">
+              </iframe>
+            </div>
+          </div>
+        }
+
       </div>
     </div>
 
