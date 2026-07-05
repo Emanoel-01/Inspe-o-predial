@@ -177,7 +177,6 @@ export class AppComponent implements OnInit {
   }
 
   onLoginSuccess(cred: { email: string; password: string }): void {
-    console.log('onLoginSuccess disparado'); // prova de evento 0.4
     const profile = this.userProfile();
     if (profile && profile.fullName) {
       this.userName.set(profile.fullName.split(' ')[0]);
@@ -195,7 +194,6 @@ export class AppComponent implements OnInit {
   }
 
   confirmarPinAdm(pin: string): void {
-    console.log('confirmarPinAdm disparado'); // prova de evento 0.4
     if (pin.trim() === this.PIN_ADM) {
       this.admAcessoLiberado.set(true);
       this.mostrarPinAdm.set(false);

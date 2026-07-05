@@ -115,7 +115,6 @@ export class UserProfileModalComponent {
   };
 
   onCategoriaProfissionalChange(categoria: string): void {
-    console.log(`onCategoriaProfissionalChange disparado: ${categoria}`); // prova de evento
     this.profile.categoriaProfissional = categoria as any;
     this.profile.professionalTitle = this.TITULO_POR_CATEGORIA[categoria] || this.profile.professionalTitle;
   }

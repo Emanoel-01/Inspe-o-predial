@@ -1082,7 +1082,6 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   async confirmarExclusao(): Promise<void> {
     const alvo = this.vistoriaParaExcluir();
     if (!alvo) return;
-    console.log('exclusão confirmada — removendo do IndexedDB', alvo.id);
     try {
       await this.dbService.deleteVistoria(alvo.id);            // 1) DB primeiro
     } catch (e) {
@@ -1732,7 +1731,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   navegarParaAvaliacaoManutencao(): void {
     const ativa = this.vistoriaAtiva();
     if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
-    console.log('navegarParaAvaliacaoManutencao disparado'); // prova de evento 0.4
     const textoAtual = ativa.avaliacaoManutencaoTexto?.trim();
     this.novoAvaliacaoManutencaoTexto.set(textoAtual || this.sugerirAvaliacaoManutencao(ativa));
     this.modoExibicao.set('AVALIACAO_MANUTENCAO');
@@ -1743,13 +1741,11 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   salvarAvaliacaoManutencao(texto: string): void {
-    console.log('salvarAvaliacaoManutencao disparado'); // prova de evento 0.4
     this.atualizarVistoriaAtiva({ avaliacaoManutencaoTexto: texto });
   }
 
   regerarSugestaoAvaliacaoManutencao(): void {
     const ativa = this.vistoriaAtiva(); if (!ativa) return;
-    console.log('regerarSugestaoAvaliacaoManutencao disparado'); // prova de evento 0.4
     const sugestao = this.sugerirAvaliacaoManutencao(ativa);
     this.novoAvaliacaoManutencaoTexto.set(sugestao);
     this.salvarAvaliacaoManutencao(sugestao);
@@ -1804,7 +1800,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   navegarParaAvaliacaoCriticidade(): void {
     const ativa = this.vistoriaAtiva();
     if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
-    console.log('navegarParaAvaliacaoCriticidade disparado'); // prova de evento 0.4
     const textoAtual = ativa.avaliacaoCriticidadeTexto?.trim();
     this.novoAvaliacaoCriticidadeTexto.set(textoAtual || this.sugerirAvaliacaoCriticidade(ativa));
     this.modoExibicao.set('AVALIACAO_CRITICIDADE');
@@ -1815,13 +1810,11 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   salvarAvaliacaoCriticidade(texto: string): void {
-    console.log('salvarAvaliacaoCriticidade disparado'); // prova de evento 0.4
     this.atualizarVistoriaAtiva({ avaliacaoCriticidadeTexto: texto });
   }
 
   regerarSugestaoAvaliacaoCriticidade(): void {
     const ativa = this.vistoriaAtiva(); if (!ativa) return;
-    console.log('regerarSugestaoAvaliacaoCriticidade disparado'); // prova de evento 0.4
     const sugestao = this.sugerirAvaliacaoCriticidade(ativa);
     this.novoAvaliacaoCriticidadeTexto.set(sugestao);
     this.salvarAvaliacaoCriticidade(sugestao);
@@ -1908,7 +1901,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   navegarParaConclusoes(): void {
     const ativa = this.vistoriaAtiva();
     if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
-    console.log('navegarParaConclusoes disparado'); // prova de evento 0.4
     this.novoConclusaoSinteseTexto.set(ativa.conclusaoSinteseTexto?.trim() || this.sugerirConclusaoSintese(ativa));
     this.novoConclusaoRiscosTexto.set(ativa.conclusaoRiscosTexto?.trim() || this.sugerirConclusaoRiscos(ativa));
     this.novoConclusaoRecomendacoesTexto.set(ativa.conclusaoRecomendacoesTexto?.trim() || this.sugerirConclusaoRecomendacoes(ativa));
@@ -1967,7 +1959,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   navegarParaAnexoArt(): void {
     const ativa = this.vistoriaAtiva();
     if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
-    console.log('navegarParaAnexoArt disparado'); // prova de evento 0.4
     this.modoExibicao.set('ANEXO_ART');
   }
 
@@ -1976,7 +1967,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   async processarAnexoArtRrt(files: FileList | null): Promise<void> {
-    console.log(`processarAnexoArtRrt: ${files?.length ?? 0} arquivo(s)`); // prova 0.4
     if (!files || files.length === 0) return;
     const ativa = this.vistoriaAtiva(); if (!ativa) return;
 
@@ -1998,7 +1988,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   solicitarExcluirAnexoArtRrt(): void {
     const ativa = this.vistoriaAtiva(); if (!ativa?.anexoArtRrt) return;
     const anexoId = ativa.anexoArtRrt.id;
-    console.log(`solicitarExcluirAnexoArtRrt: ${anexoId}`); // prova 0.4
     if (this.anexoPendenteConfirmacaoExclusao() === anexoId) {
       void this.excluirAnexoArtRrt(anexoId);
       this.anexoPendenteConfirmacaoExclusao.set(null);
@@ -2056,7 +2045,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     novaJanela.document.write('<html><body style="font-family:sans-serif;padding:20px">Gerando relatório, aguarde…</body></html>');
 
     // Registro imutável da emissão — snapshot congelado, nunca editado depois
-    console.log('Emissão de laudo disparada — criando snapshot imutável.'); // prova de evento 0.4
     try {
       const numeroEmissao = (await this.dbService.countLaudosEmitidos()) + 1;
       const novoLaudo: LaudoEmitido = {
@@ -2182,7 +2170,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const conclusoes = this.gerarConclusoesHtml(ativa);
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
-    const secao8 = this.gerarSecao8Html(itens);
     const secao9 = this.gerarSecao9Html(itens);
     const anexoI = this.gerarAnexoINorteadoresHtml(ativa);
     const relacaoAnexos = this.gerarRelacaoAnexosHtml(ativa);
@@ -4131,7 +4118,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       this.toastService.show('Selecione uma vistoria ativa para acessar a Anamnese.', 'error');
       return;
     }
-    console.log('navegarParaAnamnese disparado'); // prova de evento 0.4
     if (!ativa.anamnese) {
       this.atualizarVistoriaAtiva({
         anamnese: { constatacoes: [], anexos: [] }
@@ -4142,13 +4128,11 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   voltarDeAnamnese(): void {
-    console.log('voltarDeAnamnese disparado'); // prova de evento 0.4
     this.limparUrlsAnexos();
     this.modoExibicao.set('EXECUCAO');
   }
 
   async processarAnexoAnamnese(files: FileList | null): Promise<void> {
-    console.log(`processarAnexoAnamnese: ${files?.length ?? 0} arquivo(s)`); // prova 0.4
     if (!files || files.length === 0) return;
     const ativa = this.vistoriaAtiva(); if (!ativa) return;
     const novos: Anexo[] = [];
@@ -4164,7 +4148,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   solicitarExcluirAnexoAnamnese(anexoId: string): void {
-    console.log(`solicitarExcluirAnexoAnamnese: ${anexoId}`); // prova 0.4
     if (this.anexoPendenteConfirmacaoExclusao() === anexoId) {
       void this.excluirAnexoAnamnese(anexoId);
       this.anexoPendenteConfirmacaoExclusao.set(null);
@@ -4188,7 +4171,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   salvarLegendaAnexoAnamnese(anexoId: string, legenda: string): void {
-    console.log(`salvarLegendaAnexoAnamnese: ${anexoId}`); // prova 0.4
     const ativa = this.vistoriaAtiva(); if (!ativa?.anamnese) return;
     const anexos = ativa.anamnese.anexos.map(a =>
       a.id === anexoId ? { ...a, legenda: legenda.trim() || undefined } : a
@@ -4197,7 +4179,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   vincularAnexoConstatacao(anexoId: string, constatacaoId: string): void {
-    console.log(`vincularAnexoConstatacao: ${anexoId} -> ${constatacaoId}`); // prova 0.4
     const ativa = this.vistoriaAtiva(); if (!ativa?.anamnese) return;
     const anexos = ativa.anamnese.anexos.map(a =>
       a.id === anexoId ? { ...a, constatacaoId: constatacaoId || undefined } : a
@@ -4221,7 +4202,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   adicionarConstatacao(): void {
-    console.log('adicionarConstatacao disparado'); // prova 0.4
     const ativa = this.vistoriaAtiva(); if (!ativa) return;
     const tipo = this.novaConstatacaoTipo();
     const descricao = this.novaConstatacaoDescricao().trim();
@@ -4257,7 +4237,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   solicitarExcluirConstatacao(id: string): void {
-    console.log(`solicitarExcluirConstatacao: ${id}`); // prova 0.4
     if (this.constatacaoPendenteConfirmacaoExclusao() === id) {
       this.excluirConstatacao(id);
       this.constatacaoPendenteConfirmacaoExclusao.set(null);
@@ -4281,8 +4260,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   adicionarDocumentoNorteador(): void {
     const ativa = this.vistoriaAtiva();
     if (!ativa) return;
-
-    console.log('Botão Adicionar Documento Norteador clicado.'); // Regra 0.4: prova de clique de evento
 
     const novoDoc: DocumentoNorteador = {
       id: crypto.randomUUID(),
@@ -4319,8 +4296,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const select = event.target as HTMLSelectElement;
     const value = select.value as DisponibilidadeNorteador;
 
-    console.log(`setDisponibilidade disparado para ${docId}: ${value}`); // Prova de evento 0.4
-
     const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
       if (doc.id === docId) {
         const updated = { ...doc, disponibilidade: value };
@@ -4342,8 +4317,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const select = event.target as HTMLSelectElement;
     const value = (select.value || undefined) as ConformidadeNorteador | undefined;
 
-    console.log(`setConformidade disparado para ${docId}: ${value}`); // Prova de evento 0.4
-
     const atualizados = (ativa.documentosNorteadores ?? []).map(doc => {
       if (doc.id === docId) {
         return { ...doc, conformidade: value };
@@ -4355,7 +4328,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   solicitarExcluirNorteador(docId: string): void {
-    console.log(`solicitarExcluirNorteador disparado para: ${docId}`); // Prova de evento 0.4
     if (this.norteadorPendenteConfirmacaoExclusao() === docId) {
       this.excluirNorteador(docId);
       this.norteadorPendenteConfirmacaoExclusao.set(null);
@@ -4390,7 +4362,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   solicitarExcluirAnexo(docId: string, anexoId: string): void {
-    console.log(`solicitarExcluirAnexo disparado para anexo: ${anexoId} no doc: ${docId}`); // Prova de evento 0.4
     if (this.anexoPendenteConfirmacaoExclusao() === anexoId) {
       void this.excluirAnexo(docId, anexoId);
       this.anexoPendenteConfirmacaoExclusao.set(null);
@@ -4426,7 +4397,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   async processarAnexoDocumento(docId: string, files: FileList | null): Promise<void> {
-    console.log(`processarAnexoDocumento disparado para o documento ${docId}. Quantidade de arquivos: ${files?.length ?? 0}`); // Prova de evento 0.4
     if (!files || files.length === 0) return;
 
     const ativa = this.vistoriaAtiva();
@@ -4483,7 +4453,6 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
   }
 
   verDetalhesLaudo(laudo: LaudoEmitido): void {
-    console.log(`verDetalhesLaudo disparado: ${laudo.id}`); // prova de evento 0.4
     this.laudoSelecionado.set(laudo);
     this.modoExibicao.set('DETALHE_LAUDO');
   }
