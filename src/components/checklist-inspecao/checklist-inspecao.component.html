@@ -754,6 +754,10 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
               <span>Anamnese</span>
             </button>
+            <button (click)="navegarParaAvaliacaoManutencao()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-sky-100 active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="21" x2="9" y2="9"></line><line x1="3" y1="14" x2="9" y2="14"></line></svg>
+              <span>Avaliação Manutenção</span>
+            </button>
             <button (click)="exportarRelatorioPDF()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow-sm active:scale-95">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
               <span>Gerar Relatório</span>
@@ -2069,6 +2073,88 @@
         </div>
       </div>
 
+    </div>
+  }
+
+  <!-- MODO 6: AVALIAÇÃO DA MANUTENÇÃO E USO -->
+  @if (modoExibicao() === 'AVALIACAO_MANUTENCAO' && vistoriaAtiva()) {
+    <div class="space-y-6">
+      <!-- Cabeçalho de Navegação -->
+      <div class="bg-white rounded-xl shadow-lg p-5 border border-slate-200 sticky top-0 z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-indigo-100 text-indigo-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-1 inline-block">
+            Seção 11.0 do Laudo
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Avaliação da Manutenção e Uso</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Vistoria: {{ vistoriaAtiva()?.buildingName }} · Recomendações e análise de conformidade de uso</p>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button (click)="voltarDeAvaliacaoManutencao()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-lg text-sm transition-all border border-slate-200 active:scale-95 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Voltar à Inspeção</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Área de Edição e Sugestão -->
+      <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+              </svg>
+              Análise de Manutenção Predial (L LIP / ABNT NBR 5674 & 14037)
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Este texto é gerado automaticamente com base nos documentos norteadores e inconformidades, mas você tem controle total para editar.</p>
+          </div>
+          <div>
+            <button (click)="regerarSugestaoAvaliacaoManutencao()" class="inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-4 py-2 rounded-lg text-xs transition-all border border-sky-200 cursor-pointer active:scale-95">
+              <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              <span>Regerar Sugestão (IA)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <!-- Alerta de Orientação -->
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-slate-700 leading-relaxed flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <div class="space-y-1">
+              <p class="font-bold text-amber-900">Diretrizes da Seção 11.0</p>
+              <p>O texto abaixo avalia se o condomínio ou proprietário executa o plano de manutenção preventiva de acordo com a ABNT NBR 5674 e as diretrizes de uso da ABNT NBR 14037. Ele cruza informações sobre a ausência ou desconformidade de documentos como PMOC, AVCB e as patologias críticas encontradas.</p>
+              <p class="font-semibold text-slate-800">Dica: quaisquer edições feitas por você não serão sobrescritas a menos que clique em "Regerar Sugestão (IA)". O salvamento é automático ao sair do campo.</p>
+            </div>
+          </div>
+
+          <!-- Textarea de edição -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold uppercase text-slate-600 tracking-wider">Texto do Laudo (Editável)</label>
+            <textarea [value]="novoAvaliacaoManutencaoTexto()"
+                      #manutencaoTextarea
+                      (blur)="salvarAvaliacaoManutencao(manutencaoTextarea.value)"
+                      rows="18"
+                      placeholder="Análise da gestão de manutenção, PMOC, AVCB e conservação dos sistemas..."
+                      class="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 focus:outline-none transition-all shadow-inner bg-slate-50/10 font-sans leading-relaxed"></textarea>
+          </div>
+
+          <!-- Rodapé de Ações do Card -->
+          <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button (click)="voltarDeAvaliacaoManutencao()"
+                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-lg text-sm transition-all active:scale-95 cursor-pointer">
+              Voltar
+            </button>
+            <button (click)="salvarAvaliacaoManutencao(manutencaoTextarea.value); voltarDeAvaliacaoManutencao()"
+                    class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-all shadow-md active:scale-95 cursor-pointer">
+              Salvar e Voltar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   }
 

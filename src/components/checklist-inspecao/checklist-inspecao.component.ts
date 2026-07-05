@@ -127,6 +127,7 @@ export interface Vistoria {
   documentosNorteadores?: DocumentoNorteador[];
   anamnese?: Anamnese;
   exibirGlossario?: boolean;   // NOVO — Seção 3.0 do laudo; on por padrão (undefined = true)
+  avaliacaoManutencaoTexto?: string;   // NOVO — Seção 11.0; texto sugerido automaticamente, sempre editável pelo RT
 }
 
 export interface LaudoEmitido {
@@ -542,9 +543,10 @@ export class ChecklistInspecaoComponent implements OnInit, OnDestroy {
   });
 
   // Modo de visualização: 'LISTA' (gerenciar vistorias) ou 'EXECUCAO' (inspecionando no local) ou 'CRIACAO' (configurando nova)
-  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO'>('LISTA');
+  modoExibicao = signal<'LISTA' | 'CRIACAO' | 'EXECUCAO' | 'EDICAO' | 'NORTEADORES' | 'ANAMNESE' | 'DETALHE_LAUDO' | 'AVALIACAO_MANUTENCAO'>('LISTA');
   vistoriaEmEdicao = signal<Vistoria | null>(null);
   laudoSelecionado = signal<LaudoEmitido | null>(null);
+  novoAvaliacaoManutencaoTexto = signal<string>('');
 
   // Carregar os sistemas organizados da base de dados estática
   sistemasDisponiveis = computed(() => {
@@ -1662,6 +1664,71 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     void this.salvarVistorias(lista);
   }
 
+  private sugerirAvaliacaoManutencao(vistoria: Vistoria): string {
+    const docs = vistoria.documentosNorteadores ?? [];
+    const constatacoes = Array.isArray(vistoria.anamnese?.constatacoes) ? vistoria.anamnese!.constatacoes : [];
+
+    if (docs.length === 0 && constatacoes.length === 0) {
+      return 'Não há documentos norteadores ou constatações de anamnese suficientes nesta vistoria para uma ' +
+        'avaliação cruzada da gestão de manutenção e uso. Recomenda-se complementar o levantamento documental ' +
+        'e histórico em vistorias futuras. Este texto pode ser editado livremente pelo Responsável Técnico.';
+    }
+
+    const disponibilizados = docs.filter(d => d.disponibilidade === 'DD').length;
+    const naoDisponibilizados = docs.filter(d => d.disponibilidade === 'DND').length;
+    const naoConformes = docs.filter(d => d.disponibilidade === 'DD' && d.conformidade === 'NC').length;
+    const intervencoes = constatacoes.filter(c => c.tipo === 'INTERVENCAO').length;
+    const relatosOcupante = constatacoes.filter(c => c.tipo === 'RELATO_OCUPANTE').length;
+
+    const partes: string[] = [];
+    partes.push('A avaliação da gestão de manutenção e uso combina os resultados da análise documental (Anexo I) ' +
+      'com os relatos obtidos na anamnese.');
+
+    if (docs.length > 0) {
+      partes.push(`Do total de documentos norteadores levantados, ${disponibilizados} ${disponibilizados === 1 ? 'foi disponibilizado' : 'foram disponibilizados'}` +
+        `${naoDisponibilizados > 0 ? ` e ${naoDisponibilizados} formalmente ${naoDisponibilizados === 1 ? 'não disponibilizado' : 'não disponibilizados'}` : ''}` +
+        `${naoConformes > 0 ? `, com ${naoConformes} em não conformidade` : ''}.`);
+    }
+    if (intervencoes > 0) {
+      partes.push(`Foram relatadas ${intervencoes} intervenção(ões) ou reforma(s) anterior(es) na anamnese, o que deve ser ` +
+        'confrontado com os registros técnicos disponíveis.');
+    }
+    if (relatosOcupante > 0) {
+      partes.push(`Há ${relatosOcupante} relato(s) de ocupante(s) que complementam o histórico de uso e manutenção da edificação.`);
+    }
+    partes.push('Recomenda-se que o responsável legal formalize e mantenha atualizado um programa de manutenção ' +
+      'preventiva, nos termos da ABNT NBR 5674. Este texto foi sugerido automaticamente a partir dos dados ' +
+      'levantados e deve ser revisado pelo Responsável Técnico antes da emissão do laudo.');
+
+    return partes.join(' ');
+  }
+
+  navegarParaAvaliacaoManutencao(): void {
+    const ativa = this.vistoriaAtiva();
+    if (!ativa) { this.toastService.show('Selecione uma vistoria ativa.', 'error'); return; }
+    console.log('navegarParaAvaliacaoManutencao disparado'); // prova de evento 0.4
+    const textoAtual = ativa.avaliacaoManutencaoTexto?.trim();
+    this.novoAvaliacaoManutencaoTexto.set(textoAtual || this.sugerirAvaliacaoManutencao(ativa));
+    this.modoExibicao.set('AVALIACAO_MANUTENCAO');
+  }
+
+  voltarDeAvaliacaoManutencao(): void {
+    this.modoExibicao.set('EXECUCAO');
+  }
+
+  salvarAvaliacaoManutencao(texto: string): void {
+    console.log('salvarAvaliacaoManutencao disparado'); // prova de evento 0.4
+    this.atualizarVistoriaAtiva({ avaliacaoManutencaoTexto: texto });
+  }
+
+  regerarSugestaoAvaliacaoManutencao(): void {
+    const ativa = this.vistoriaAtiva(); if (!ativa) return;
+    console.log('regerarSugestaoAvaliacaoManutencao disparado'); // prova de evento 0.4
+    const sugestao = this.sugerirAvaliacaoManutencao(ativa);
+    this.novoAvaliacaoManutencaoTexto.set(sugestao);
+    this.salvarAvaliacaoManutencao(sugestao);
+  }
+
   voltarParaLista(): void {
     this.vistoriaAtiva.set(null);
     this.modoExibicao.set('LISTA');
@@ -1821,6 +1888,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
     const ressalvas = this.gerarRessalvasHtml();
     const metodologia = this.gerarMetodologiaHtml();
     const diagnostico = this.gerarDiagnosticoHtml(itens);
+    const avaliacaoManutencao = this.gerarAvaliacaoManutencaoHtml(ativa);
     const anamnese = this.gerarAnamneseHtml(ativa, anexoImagensMap);
     const secao7 = this.gerarSecao7Html(itens, evidenciasMap);
     const secao8 = this.gerarSecao8Html(itens);
@@ -1838,6 +1906,7 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       { href: 'sec-7',  num: '7.0',  label: 'Caracterização do Objeto da Inspeção' },
       { href: 'sec-9',  num: '9.0',  label: 'Vistoria no Objeto da Inspeção' },
       { href: 'sec-10', num: '10.0', label: 'Diagnóstico do Objeto da Inspeção' },
+      { href: 'sec-11', num: '11.0', label: 'Avaliação da Manutenção e Uso' },
       { href: 'sec-14', num: '14.0', label: 'Relação de Anexos' },
       { href: 'anexo-1', label: 'Anexo I — Verificação de Documentos Norteadores' },
       { href: 'anexo-2', label: 'Anexo II — Relatório Fotográfico' },
@@ -2506,6 +2575,9 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
           <!-- 10.0 Diagnóstico do Objeto da Inspeção -->
           ${diagnostico}
 
+          <!-- 11.0 Avaliação da Manutenção e Uso -->
+          ${avaliacaoManutencao}
+
           <!-- 14.0 Relação de Anexos -->
           ${relacaoAnexos}
 
@@ -2755,6 +2827,15 @@ Inclua apenas as normas realmente referenciadas. Mínimo 2, máximo 8.`;
       <p style="font-size:8pt;color:#8A949C;margin-top:2mm;line-height:1.5;">Detalhamento completo de cada ocorrência — localização, causa
       provável, recomendação técnica, normas aplicáveis e registro fotográfico — disponível na ficha individual
       correspondente, no Anexo III.</p>`;
+  }
+
+  private gerarAvaliacaoManutencaoHtml(ativa: Vistoria): string {
+    const texto = (ativa.avaliacaoManutencaoTexto && ativa.avaliacaoManutencaoTexto.trim())
+      ? ativa.avaliacaoManutencaoTexto
+      : this.sugerirAvaliacaoManutencao(ativa);
+    return `
+      <h2 class="sec-h" id="sec-11"><span class="sn">11.0</span>Avaliação da Manutenção e Uso</h2>
+      <p style="font-size:9pt;line-height:1.7;text-align:justify;margin-bottom:4mm;">${texto}</p>`;
   }
 
   private gerarSecao4Html(ativa: Vistoria): string {
